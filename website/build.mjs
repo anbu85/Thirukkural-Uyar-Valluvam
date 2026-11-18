@@ -90,7 +90,7 @@ function markdown(source,root,videoContext) {
     html(t){return esc(t.text);},
     link(t){
       const addr=nativeLink(t.href,root);
-      const embed=videoContext && youtubeEmbedURL(addr);
+      const embed=youtubeEmbedURL(addr);
       if (embed) {
         const title=esc(`${videoContext} · காணொளி ${++videoNumber}`);
         const label=t.text === t.href ? 'YouTube-இல் காண்க' : this.parser.parseInline(t.tokens);
@@ -104,8 +104,8 @@ function markdown(source,root,videoContext) {
   }});
   return parser.parse(source);
 }
-function sectionsHTML(fields, root, skip=[], coupletId){
-  return fields.filter(s=>!skip.includes(s.name)).map(s=>`<section class="note" id="${esc(slug(s.name))}"><h2>${esc(s.name)}</h2><div class="prose">${markdown(s.body,root,coupletId && `குறள் ${coupletId} · ${s.name}`)}</div></section>`).join('');
+function sectionsHTML(fields, root, pageTitle, skip=[]){
+  return fields.filter(s=>!skip.includes(s.name)).map(s=>`<section class="note" id="${esc(slug(s.name))}"><h2>${esc(s.name)}</h2><div class="prose">${markdown(s.body,root,`${pageTitle} · ${s.name}`)}</div></section>`).join('');
 }
 function render(path,title,body){
   if(routes.has(path))throw Error('Duplicate route '+path);
@@ -129,7 +129,7 @@ function neighbor(root,id,step){
   return `<a href="${root}kural/${target}/" rel="${step<0?'prev':'next'}">${step<0?icon('left',16):''} குறள் ${target} ${step>0?icon('right',16):''}</a>`;
 }
 function intro(path,label,fields,crumb,back,backLabel,skip){
-  render(path,label+' · முன்னுரை',root=>`<div class="reading">${crumb(root)}<div class="overline">முன்னுரை</div><h1>${esc(label)}</h1>${sectionsHTML(fields,root,skip)}<a class="text-link" href="${root}${back}">${icon('left')} ${esc(backLabel)}</a></div>`);
+  render(path,label+' · முன்னுரை',root=>`<div class="reading">${crumb(root)}<div class="overline">முன்னுரை</div><h1>${esc(label)}</h1>${sectionsHTML(fields,root,label,skip)}<a class="text-link" href="${root}${back}">${icon('left')} ${esc(backLabel)}</a></div>`);
 }
 for(const book of books){
   intro('intro/book-'+book.id,book.name,splitSections(load('பால்/'+book.id+'.md')),r=>crumbs(r,book),'#book-'+book.id,book.name,['எண்','பால்']);
@@ -149,12 +149,12 @@ for(const book of books){
       });
       render(chapterPath,ch.name,root=>`<div class="reading wide">${crumbs(root,book,group)}<div class="chapter-intro"><div><div class="overline">அதிகாரம் ${ch.id} · குறள் ${first}–${first+9}</div><h1>${esc(ch.name)}</h1>${introLink('intro/')}</div><img src="${root}assets/chapters/${ch.id}.webp" alt=""></div><h2 class="list-title">குறள்கள்</h2><div class="verse-list">${verses.map(v=>`<a href="${root}kural/${v.id}/"><small>${pad(v.id,3)}</small><div class="verse">${verseMarkup(v.lines)}</div>${icon('chev',18)}</a>`).join('')}</div></div>`);
       for(const v of verses){
-        render('kural/'+v.id,'குறள் '+v.id+' · '+ch.name,root=>`<div class="reading wide">${crumbs(root,book,group,ch)}<div class="reader-layout"><aside><p>${esc(ch.name)}</p><nav aria-label="இந்த அதிகாரத்தின் குறள்கள்">${verses.map(other=>`<a ${v.id===other.id?'aria-current="page"':''} href="${root}kural/${other.id}/">குறள் ${other.id}</a>`).join('')}</nav></aside><article><div class="verse-heading"><h1>குறள் ${v.id}</h1><nav aria-label="குறள் வழிசெலுத்தல்">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></div><div class="verse main-verse">${verseMarkup(v.lines)}</div>${sectionsHTML(v.fields,root,['குறள் எண்','குறள்','எண்'],v.id)}<nav class="neighbors">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></article></div></div>`);
+        render('kural/'+v.id,'குறள் '+v.id+' · '+ch.name,root=>`<div class="reading wide">${crumbs(root,book,group,ch)}<div class="reader-layout"><aside><p>${esc(ch.name)}</p><nav aria-label="இந்த அதிகாரத்தின் குறள்கள்">${verses.map(other=>`<a ${v.id===other.id?'aria-current="page"':''} href="${root}kural/${other.id}/">குறள் ${other.id}</a>`).join('')}</nav></aside><article><div class="verse-heading"><h1>குறள் ${v.id}</h1><nav aria-label="குறள் வழிசெலுத்தல்">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></div><div class="verse main-verse">${verseMarkup(v.lines)}</div>${sectionsHTML(v.fields,root,`குறள் ${v.id}`,['குறள் எண்','குறள்','எண்'])}<nav class="neighbors">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></article></div></div>`);
       }
     }
   }
 }
-grammar.forEach((g,i)=>render('grammar/'+(i+1),g,root=>`<div class="reading"><a class="text-link" href="${root}#grammar">${icon('left')} குறளில் இலக்கணம்</a><h1>${esc(g)}</h1><div class="prose">${markdown(load('குறளில் இலக்கணம்/'+g+'.md'),root)}</div></div>`));
+grammar.forEach((g,i)=>render('grammar/'+(i+1),g,root=>`<div class="reading"><a class="text-link" href="${root}#grammar">${icon('left')} குறளில் இலக்கணம்</a><h1>${esc(g)}</h1><div class="prose">${markdown(load('குறளில் இலக்கணம்/'+g+'.md'),root,g)}</div></div>`));
 if(search.length!==1330||new Set(search.map(v=>v[0])).size!==1330)throw Error('Incomplete collection');
 search.sort((a,b)=>a[0]-b[0]);
 write(join(out,'assets/search.json'),JSON.stringify(search));
