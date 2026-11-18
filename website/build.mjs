@@ -1,5 +1,6 @@
 import { readFileSync as read, writeFileSync as write, mkdirSync, cpSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Marked } from './vendor/marked.mjs';
 
@@ -18,7 +19,12 @@ const search = [];
 const routes = new Set();
 mkdirSync(out,{recursive:true});
 cpSync(join(here,'assets'),join(out,'assets'),{recursive:true});
-for (const file of ['style.css','reader.js','book.js']) cpSync(join(here,file),join(out,'assets',file));
+const assetURLs = {};
+for (const file of ['style.css','reader.js','book.js']){
+  const content=read(join(here,file));
+  write(join(out,'assets',file),content);
+  assetURLs[file]='assets/'+file+'?v='+createHash('sha256').update(content).digest('hex').slice(0,12);
+}
 for (const file of ['three.module.min.js','three-LICENSE.txt']) cpSync(join(here,'vendor',file),join(out,'assets',file));
 function splitSections(raw) {
   return [...raw.matchAll(/^##[ \t]+(.+?)[ \t]*\n([\s\S]*?)(?=^##[ \t]+|(?![\s\S]))/gm)]
@@ -76,7 +82,7 @@ function render(path,title,body){
   routes.add(path);
   const root=path?'../'.repeat(path.split('/').length):'./';
   const content=body(root);
-  const html=`<!doctype html><html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#faf6ed"><title>${esc(title)} · உயர் வள்ளுவம்</title><link rel="stylesheet" href="${root}assets/style.css"><script type="module" src="${root}assets/reader.js"></script></head><body data-root="${root}"><a class="skip" href="#main">உள்ளடக்கத்திற்குச் செல்க</a><header class="mast"><div class="bar"><a class="brand" href="${root}">${icon('book',30)} உயர் வள்ளுவம்</a><nav aria-label="முதன்மை"><a class="library-link" href="${root}#library">நூலகம்</a><button class="search-open" aria-label="குறள் தேடல்">${icon('search',17)} தேடல்</button></nav></div></header><main id="main">${content}</main><footer><a href="${root}">உயர் வள்ளுவம்</a><span>கற்க கசடற அறக்கட்டளை</span></footer><dialog id="search-dialog"><div class="search-head"><label for="query">குறள் தேடல்</label><button aria-label="மூடு" class="icon-button" data-close>${icon('close')}</button></div><div class="input-wrap">${icon('search')}<input type="search" id="query" placeholder="குறள் எண், சொல் அல்லது அதிகாரம்" autocomplete="off"></div><p role="status" id="status"></p><div id="results"></div></dialog></body></html>`;
+  const html=`<!doctype html><html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#faf6ed"><title>${esc(title)} · உயர் வள்ளுவம்</title><link rel="stylesheet" href="${root}${assetURLs['style.css']}"><script type="module" src="${root}${assetURLs['reader.js']}"></script></head><body data-root="${root}"><a class="skip" href="#main">உள்ளடக்கத்திற்குச் செல்க</a><header class="mast"><div class="bar"><a class="brand" href="${root}">${icon('book',30)} உயர் வள்ளுவம்</a><nav aria-label="முதன்மை"><a class="library-link" href="${root}#library">நூலகம்</a><button class="search-open" aria-label="குறள் தேடல்">${icon('search',17)} தேடல்</button></nav></div></header><main id="main">${content}</main><footer><a href="${root}">உயர் வள்ளுவம்</a><span>கற்க கசடற அறக்கட்டளை</span></footer><dialog id="search-dialog"><div class="search-head"><label for="query">குறள் தேடல்</label><button aria-label="மூடு" class="icon-button" data-close>${icon('close')}</button></div><div class="input-wrap">${icon('search')}<input type="search" id="query" placeholder="குறள் எண், சொல் அல்லது அதிகாரம்" autocomplete="off"></div><p role="status" id="status"></p><div id="results"></div></dialog></body></html>`;
   const folder=join(out,path);mkdirSync(folder,{recursive:true});write(join(folder,'index.html'),html);
 }
 function crumbs(root,book,group,chapter){
@@ -127,7 +133,7 @@ function shelf(group) {
   return `<section class="shelf" id="group-${group.id}"><div class="shelf-head"><h3>${esc(group.name)}</h3><span class="range">அதிகாரம் ${group.chapters[0].id}–${group.chapters.at(-1).id}</span>${groupNotes.has(group.id)?introLink('intro/group-'+group.id+'/','இயல் முன்னுரை'):''}<div class="rail-controls"><button class="round" data-step="-1" aria-label="முந்தைய அதிகாரங்கள்">${icon('left',15)}</button><button class="round" data-step="1" aria-label="அடுத்த அதிகாரங்கள்">${icon('right',15)}</button></div></div><div class="rail" tabindex="0" aria-label="${esc(group.name)} அதிகாரங்கள்">${group.chapters.map(c=>`<a href="chapter/${c.id}/" class="chapter-card"><div class="art"><img loading="lazy" src="assets/chapters/${c.id}.webp" alt=""></div><div class="card-foot"><small>${pad(c.id,2)}</small><strong>${esc(c.name)}</strong>${icon('chev',15)}</div></a>`).join('')}</div></section>`;
 }
 const first=search[0];
-render('','திருக்குறள்',()=>`<section class="hero"><div class="hero-inner"><div class="hero-copy"><h1>திருக்குறள்</h1><div class="rule"></div><p class="hero-verse">${verseMarkup(splitSections(load('குறள்/0001.md')).find(s=>s.name==='குறள்').body.split('\n').map(plain))}</p><a class="verse-source" href="kural/${first[0]}/">குறள் 1 ${icon('chev',13)}</a><div><a class="cta" href="#library">நூலகம் காண்க ${icon('right',18)}</a></div></div><div class="stage"><div class="rings"></div><a class="book-link" href="chapter/1/" aria-label="கடவுள் வாழ்த்து அதிகாரத்தைத் திறக்க"><div class="flat-book"><div><b>திருக்குறள்</b><img src="assets/chapters/1.webp" alt="கோபுரம், சூரியன், தாமரை ஓவியம்"></div></div></a></div></div></section><section id="library" class="catalog"><h2 class="catalog-title">நூலகம்</h2><nav class="book-tabs" aria-label="பால் தேர்வு">${tabs}</nav>${books.map(b=>`<section id="book-${b.id}" data-book="${b.id}" class="book-section"><div class="book-meta"><h2>${b.name}</h2>${introLink('intro/book-'+b.id+'/','பால் முன்னுரை')}</div>${b.groups.map(shelf).join('')}</section>`).join('')}<section id="grammar" class="grammar"><h2>குறளில் இலக்கணம்</h2>${grammar.map((label,i)=>`<a href="grammar/${i+1}/">${esc(label)} ${icon('chev',13)}</a>`).join('')}</section></section><script type="module" src="assets/book.js"></script>`);
+render('','திருக்குறள்',()=>`<section class="hero"><div class="hero-inner"><div class="hero-copy"><h1>திருக்குறள்</h1><div class="rule"></div><p class="hero-verse">${verseMarkup(splitSections(load('குறள்/0001.md')).find(s=>s.name==='குறள்').body.split('\n').map(plain))}</p><a class="verse-source" href="kural/${first[0]}/">குறள் 1 ${icon('chev',13)}</a><div><a class="cta" href="#library">நூலகம் காண்க ${icon('right',18)}</a></div></div><div class="stage"><div class="rings"></div><a class="book-link" href="chapter/1/" aria-label="கடவுள் வாழ்த்து அதிகாரத்தைத் திறக்க"><div class="flat-book"><div><b>திருக்குறள்</b><img src="assets/chapters/1.webp" alt="கோபுரம், சூரியன், தாமரை ஓவியம்"></div></div></a></div></div></section><section id="library" class="catalog"><h2 class="catalog-title">நூலகம்</h2><nav class="book-tabs" aria-label="பால் தேர்வு">${tabs}</nav>${books.map(b=>`<section id="book-${b.id}" data-book="${b.id}" class="book-section"><div class="book-meta"><h2>${b.name}</h2>${introLink('intro/book-'+b.id+'/','பால் முன்னுரை')}</div>${b.groups.map(shelf).join('')}</section>`).join('')}<section id="grammar" class="grammar"><h2>குறளில் இலக்கணம்</h2>${grammar.map((label,i)=>`<a href="grammar/${i+1}/">${esc(label)} ${icon('chev',13)}</a>`).join('')}</section></section><script type="module" src="${assetURLs['book.js']}"></script>`);
 write(join(out,'.nojekyll'),'');
 console.log(`Built ${routes.size} HTML pages, ${books.length} books, ${search.length} couplets.`);
 
