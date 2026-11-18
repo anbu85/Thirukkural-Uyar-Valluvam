@@ -66,7 +66,7 @@ function showResults(){
   if(!q){status.textContent='குறள் எண் அல்லது தமிழ்ச் சொல்லை உள்ளிடுக.';return;}
   const numeric=/^\d+$/.test(q);
   const matches=rows.filter(([n,chapter,text])=>numeric?n===Number(q):normalize(chapter+' '+text).includes(q));
-  status.textContent=matches.length?matches.length>35?`${matches.length} முடிவுகள் · முதல் 35`:`${matches.length} முடிவுகள்`:'முடிவுகள் இல்லை';
+  status.textContent=matches.length===1?'1 முடிவு':matches.length?matches.length>35?`${matches.length} முடிவுகள் · முதல் 35`:`${matches.length} முடிவுகள்`:'முடிவுகள் இல்லை';
   for(const [id,chapter,verse] of matches.slice(0,35)){
     const link=document.createElement('a'), label=document.createElement('small');
     label.textContent='குறள் '+id+' · '+chapter;

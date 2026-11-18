@@ -61,10 +61,39 @@ async function setup(){
   function resize(){const {width,height}=link.getBoundingClientRect();if(!width||!height)return;renderer.setSize(width,height,false);camera.aspect=width/height;camera.position.z=height<260?7.5:7.45;camera.updateProjectionMatrix();start();}
   function track(e){if(e.pointerType==='touch')return;const b=link.getBoundingClientRect();ty=-.32+((e.clientX-b.left)/b.width-.5)*.88;tx=.12+((e.clientY-b.top)/b.height-.5)*.38;start();}
   function reset(){tx=.12;ty=-.32;start();}
+  let touch=null, dragged=false;
+  function touchStart(e){
+    dragged=false;
+    if(e.pointerType==='touch')touch={x:e.clientX,y:e.clientY};
+  }
+  function touchMove(e){
+    if(!touch)return;
+    const dx=e.clientX-touch.x,dy=e.clientY-touch.y;
+    if(!dragged && (Math.abs(dx)<10 || Math.abs(dx)<Math.abs(dy)*1.3))return;
+    dragged=true;
+    ty=-.32+Math.max(-1,Math.min(1,dx/90));
+    start();
+  }
+  function touchEnd(){touch=null;reset();}
+  function openCover(e){if(dragged && e.detail){e.preventDefault();dragged=false;}}
+  link.addEventListener('pointerdown',touchStart);
+  link.addEventListener('pointermove',touchMove);
+  link.addEventListener('pointerup',touchEnd);
+  link.addEventListener('pointercancel',touchEnd);
+  link.addEventListener('click',openCover);
   link.addEventListener('pointermove',track);link.addEventListener('pointerleave',reset);
   const observer=new ResizeObserver(resize);observer.observe(link);resize();
   draw();link.classList.add('ready');
-  dispose=()=>{link.classList.remove('ready');observer.disconnect();link.removeEventListener('pointermove',track);link.removeEventListener('pointerleave',reset);cancelAnimationFrame(frame);book.children.forEach(m=>m.geometry.dispose());[cloth,edge,paper,front,coverMap,edges].forEach(o=>o.dispose());renderer.domElement.remove();renderer.dispose();dispose=null;};
+  dispose=()=>{
+    link.classList.remove('ready');observer.disconnect();
+    link.removeEventListener('pointermove',track);link.removeEventListener('pointerleave',reset);
+    link.removeEventListener('pointerdown',touchStart);link.removeEventListener('pointermove',touchMove);
+    link.removeEventListener('pointerup',touchEnd);link.removeEventListener('pointercancel',touchEnd);
+    link.removeEventListener('click',openCover);
+    cancelAnimationFrame(frame);book.children.forEach(m=>m.geometry.dispose());
+    [cloth,edge,paper,front,coverMap,edges].forEach(o=>o.dispose());
+    renderer.domElement.remove();renderer.dispose();dispose=null;
+  };
   renderer.domElement.addEventListener('webglcontextlost',()=>dispose?.(),{once:true});
 }
 function preference(){if(reduced.matches)dispose?.();else setup().catch(()=>{});}
