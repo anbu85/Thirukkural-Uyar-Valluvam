@@ -65,17 +65,47 @@ function nativeLink(href,root){
   }
   return external?href:'';
 }
-function markdown(source,root) {
+function youtubeEmbedURL(href) {
+  if (!/^https?:\/\//i.test(href)) return;
+  let url;
+  try { url = new URL(href); } catch { return; }
+  let id;
+  if (url.hostname === 'youtu.be') {
+    id = url.pathname.slice(1);
+  } else if (['youtube.com','www.youtube.com','m.youtube.com','www.youtube-nocookie.com'].includes(url.hostname)) {
+    id = url.pathname === '/watch' ? url.searchParams.get('v') : url.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)\/?$/)?.[1];
+  }
+  if (!id || !/^[\w-]{11}$/.test(id)) return;
+  const embed = new URL('https://www.youtube-nocookie.com/embed/' + id);
+  embed.searchParams.set('playsinline','1');
+  const time = url.searchParams.get('t') || url.searchParams.get('start') || new URLSearchParams(url.hash.slice(1)).get('t') || '';
+  const units = time.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+  const start = units ? Number(units[1] || 0)*3600 + Number(units[2] || 0)*60 + Number(units[3] || 0) : /^\d+$/.test(time) ? Number(time) : 0;
+  if (Number.isSafeInteger(start) && start > 0) embed.searchParams.set('start',String(start));
+  return embed.href;
+}
+function markdown(source,root,videoContext) {
+  let videoNumber = 0;
   const parser=new Marked({gfm:true,renderer:{
     html(t){return esc(t.text);},
-    link(t){const addr=nativeLink(t.href,root);const body=this.parser.parseInline(t.tokens);return addr?`<a href="${esc(addr)}">${body}</a>`:body;},
+    link(t){
+      const addr=nativeLink(t.href,root);
+      const embed=videoContext && youtubeEmbedURL(addr);
+      if (embed) {
+        const title=esc(`${videoContext} · காணொளி ${++videoNumber}`);
+        const label=t.text === t.href ? 'YouTube-இல் காண்க' : this.parser.parseInline(t.tokens);
+        return `<span class="couplet-video"><iframe src="${esc(embed)}" title="${title}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe><a href="${esc(addr)}">${label}</a></span>`;
+      }
+      const body=this.parser.parseInline(t.tokens);
+      return addr?`<a href="${esc(addr)}">${body}</a>`:body;
+    },
     image(t){const path=nativeLink(t.href,root);return path?`<a href="${esc(path)}">${esc(t.text||'படம்')}</a>`:esc(t.text);},
     heading(t){const label=this.parser.parseInline(t.tokens);return `<h${t.depth} id="${esc(slug(t.text))}">${label}</h${t.depth}>`;}
   }});
   return parser.parse(source);
 }
-function sectionsHTML(fields, root, skip=[]){
-  return fields.filter(s=>!skip.includes(s.name)).map(s=>`<section class="note" id="${esc(slug(s.name))}"><h2>${esc(s.name)}</h2><div class="prose">${markdown(s.body,root)}</div></section>`).join('');
+function sectionsHTML(fields, root, skip=[], coupletId){
+  return fields.filter(s=>!skip.includes(s.name)).map(s=>`<section class="note" id="${esc(slug(s.name))}"><h2>${esc(s.name)}</h2><div class="prose">${markdown(s.body,root,coupletId && `குறள் ${coupletId} · ${s.name}`)}</div></section>`).join('');
 }
 function render(path,title,body){
   if(routes.has(path))throw Error('Duplicate route '+path);
@@ -119,7 +149,7 @@ for(const book of books){
       });
       render(chapterPath,ch.name,root=>`<div class="reading wide">${crumbs(root,book,group)}<div class="chapter-intro"><div><div class="overline">அதிகாரம் ${ch.id} · குறள் ${first}–${first+9}</div><h1>${esc(ch.name)}</h1>${introLink('intro/')}</div><img src="${root}assets/chapters/${ch.id}.webp" alt=""></div><h2 class="list-title">குறள்கள்</h2><div class="verse-list">${verses.map(v=>`<a href="${root}kural/${v.id}/"><small>${pad(v.id,3)}</small><div class="verse">${verseMarkup(v.lines)}</div>${icon('chev',18)}</a>`).join('')}</div></div>`);
       for(const v of verses){
-        render('kural/'+v.id,'குறள் '+v.id+' · '+ch.name,root=>`<div class="reading wide">${crumbs(root,book,group,ch)}<div class="reader-layout"><aside><p>${esc(ch.name)}</p><nav aria-label="இந்த அதிகாரத்தின் குறள்கள்">${verses.map(other=>`<a ${v.id===other.id?'aria-current="page"':''} href="${root}kural/${other.id}/">குறள் ${other.id}</a>`).join('')}</nav></aside><article><div class="verse-heading"><h1>குறள் ${v.id}</h1><nav aria-label="குறள் வழிசெலுத்தல்">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></div><div class="verse main-verse">${verseMarkup(v.lines)}</div>${sectionsHTML(v.fields,root,['குறள் எண்','குறள்','எண்'])}<nav class="neighbors">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></article></div></div>`);
+        render('kural/'+v.id,'குறள் '+v.id+' · '+ch.name,root=>`<div class="reading wide">${crumbs(root,book,group,ch)}<div class="reader-layout"><aside><p>${esc(ch.name)}</p><nav aria-label="இந்த அதிகாரத்தின் குறள்கள்">${verses.map(other=>`<a ${v.id===other.id?'aria-current="page"':''} href="${root}kural/${other.id}/">குறள் ${other.id}</a>`).join('')}</nav></aside><article><div class="verse-heading"><h1>குறள் ${v.id}</h1><nav aria-label="குறள் வழிசெலுத்தல்">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></div><div class="verse main-verse">${verseMarkup(v.lines)}</div>${sectionsHTML(v.fields,root,['குறள் எண்','குறள்','எண்'],v.id)}<nav class="neighbors">${neighbor(root,v.id,-1)}${neighbor(root,v.id,1)}</nav></article></div></div>`);
       }
     }
   }
