@@ -45,6 +45,47 @@ if (books.length && 'IntersectionObserver' in window) {
   for (const card of document.querySelectorAll('.chapter-card')) visibleCards.observe(card);
 }
 
+const catalog = document.getElementById('library');
+if (catalog) {
+  let card, art, pointerX, pointerY, frame = 0;
+  function releaseShimmer() {
+    card?.classList.remove('shimmer-hover');
+    cancelAnimationFrame(frame);
+    card = null;
+    frame = 0;
+  }
+  function positionShimmer() {
+    frame = 0;
+    const rect = art.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const clamp = n => Math.max(-1,Math.min(1,n));
+    // Measure against the stationary artwork area while the cover itself floats.
+    const dx = (pointerX - rect.left - rect.width / 2) / (rect.height * .32);
+    const dy = (pointerY - rect.top - rect.height / 2) / (rect.height * .43);
+    art.style.setProperty('--shimmer-x',clamp(dx).toFixed(3));
+    art.style.setProperty('--shimmer-y',clamp(dy).toFixed(3));
+  }
+  function trackShimmer(event) {
+    const next = event.pointerType === 'touch' ? null : event.target.closest('.chapter-card');
+    if (next !== card) {
+      releaseShimmer();
+      if (!next) return;
+      card = next;
+      art = card.querySelector('.art');
+      card.classList.add('shimmer-hover');
+    }
+    if (!card || reduced.matches) return;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    if (!frame) frame = requestAnimationFrame(positionShimmer);
+  }
+  catalog.addEventListener('pointerover',trackShimmer,{passive:true});
+  catalog.addEventListener('pointermove',trackShimmer,{passive:true});
+  catalog.addEventListener('pointerleave',releaseShimmer);
+  catalog.addEventListener('pointercancel',releaseShimmer);
+  window.addEventListener('blur',releaseShimmer);
+}
+
 const railUpdates=[];
 function updateRails(){for(const fn of railUpdates)fn();}
 for(const shelf of document.querySelectorAll('.shelf')){

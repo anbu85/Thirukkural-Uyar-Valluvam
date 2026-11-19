@@ -46,50 +46,137 @@ svg { flex: none }
 .search-open:hover,.round:hover:enabled,.icon-button:hover { background: #43364d }
 .hero {
   position: relative; isolation: isolate; overflow: hidden;
-  background: linear-gradient(90deg,#151329b8,transparent 52%), var(--sky) center 58% / cover no-repeat, #292039;
+  background: linear-gradient(90deg,#151329dd 3%,#181329c2 35%,transparent 66%), var(--sky) center 58% / cover no-repeat, #292039;
 }
 .hero::after { content: ""; pointer-events: none; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg,#1f192fd1,transparent 19%) }
 .hero-inner { min-height: clamp(390px,37vw,545px); display: grid; grid-template-columns: 1.05fr 1fr; align-items: center }
-.hero-copy { padding: 30px 0 38px; text-shadow: 0 2px 20px #171329 }
-.collection-size { color: #f1cfac; font-size: 14px; letter-spacing: .015em }
-.collection-size span { padding-inline: 7px; font: 12px Georgia,serif; color: #f4c98a }
-.hero h1 { font-size: clamp(52px,6.5vw,100px); letter-spacing: -.045em; color: #fff1d5; margin-block: 12px 2px }
-.rule { width: 66px; height: 1px; margin: 5px 0 18px; background: linear-gradient(90deg,#ffe2ab,#be936d44) }
-.hero-verse { font: 550 clamp(18px,1.87vw,29px)/1.6 var(--display); color: #fff4e9 }
-.hero-verse span,.verse span { display: block }
-.verse-source { display: inline-flex; align-items: center; gap: 4px; color: #ffdfb0; font-size: 14px; margin: 4px 0 19px; text-decoration: underline; text-underline-offset: 4px }
-.cta { display: inline-flex; align-items: center; gap: 16px; border: 1px solid #f0c589; border-radius: 30px; padding: 8px 21px; background: #f2cf98; color: #302035; font-weight: 700; text-shadow: none }
-.cta:hover { background: #ffe3b6 }
+.teacher-intro {
+  display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: start;
+  gap: clamp(12px,1.75vw,28px); margin-inline: calc(var(--gut) * -.8) -3vw;
+  padding-block: 20px; text-shadow: 0 2px 12px #151024;
+}
+.teacher-profile { margin: 0; display: grid; justify-items: center; text-align: center }
+.teacher-portrait {
+  display: block; width: min(100%,clamp(164px,21.75vw,310px)); height: auto;
+  mask-image: linear-gradient(to bottom,black 85%,transparent 100%);
+}
+.teacher-credit { margin-top: 2px; color: #ffeacd; text-wrap: balance }
+.teacher-credit span,.teacher-credit strong,.verse span { display: block }
+.teacher-credit span { font-size: clamp(14px,1.15vw,18px); line-height: 1.6 }
+.teacher-credit strong { font: 700 clamp(21px,1.85vw,30px)/1.45 var(--display); color: #fff3e4; margin-block: 3px }
 .stage { min-width: 0; width: 100%; height: clamp(175px,19vw,275px); align-self: start; margin-top: clamp(6px,1vw,20px); position: relative; isolation: isolate }
-.rings { position: absolute; pointer-events: none; inset: 0 6% -18%; background: radial-gradient(ellipse,#f9e2bb27,transparent 62%) }
+.book-aura {
+  position: absolute; left: 50%; top: 50%; height: 166%; aspect-ratio: 640 / 560;
+  translate: -50% -50%; z-index: -1; pointer-events: none;
+}
+.book-aura::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 23% 34% at 49% 49%,#fff9ff 18%,#fcdefbd9 48%,#d7c0ff70 68%,transparent),
+    radial-gradient(ellipse 26% 25% at 35% 57%,#71e4ffc4,transparent 87%),
+    radial-gradient(ellipse 27% 27% at 65% 44%,#f0abd5ad,transparent 90%),
+    radial-gradient(ellipse 22% 40% at 49% 44%,#b595f78c,transparent);
+}
+.book-aura canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block }
+.book-aura canvas:first-child { filter: blur(2px) }
+.book-aura canvas:last-child { filter: blur(.55px) }
+@keyframes aura-shimmer {
+  0%,100% { transform: scale(.96); opacity: .73 }
+  54% { transform: scale(1.045); opacity: 1 }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .book-aura::before { animation: aura-shimmer 6.8s ease-in-out -2.6s infinite }
+  .book-aura.out-of-view::before { animation-play-state: paused }
+}
 .book-link { display: block; position: relative; width: 100%; height: 100%; touch-action: pan-y }
-.book-link canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .25s }
+.book-link canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transform: scale(.9) }
+.book-link canvas,.flat-book { filter: drop-shadow(0 0 1px #fffbff) drop-shadow(0 0 4px #ffdcfaed) drop-shadow(0 0 9px #c6b2ffb3) }
 .book-link.ready canvas { opacity: 1 }
 .book-link.ready .flat-book { visibility: hidden }
 .flat-book {
-  width: clamp(91px,9.5vw,150px); aspect-ratio: .73; position: absolute; top: 50%; left: 50%;
+  width: clamp(91px,9.5vw,150px); height: auto; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%) perspective(800px) rotateY(-15deg) rotateZ(6deg); border-radius: 3px 5px 7px 2px;
-  border: 2px solid #ac805b; background: #322640; box-shadow: 3px 2px #c9ac80,5px 3px #eac99a,8px 5px #60455a,13px 13px 26px #1c0c2a66; padding: 5px 6px 7px 9px;
+  background: #c28d48; box-shadow: 2px 1px #815025,4px 2px #f6da96,6px 3px #a67436,8px 5px #6b4325,13px 13px 26px #1c0c2a66;
 }
-.flat-book>div { height: 100%; border: 1px double #c4a270; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly }
-.flat-book b { color: #f7d8a4; font: 700 clamp(12px,1.3vw,20px) var(--display) }
-.flat-book img { width: 81%; height: 69%; object-fit: contain; background: #eedbc0; border-radius: 45% 45% 3px 3px }
 .catalog { padding-block: 28px 56px }
 .catalog-title { display: flex; gap: 18px; align-items: center; justify-content: center; font-size: clamp(28px,3vw,42px) }
 .catalog-title::before,.catalog-title::after { content: ""; width: min(10vw,105px); height: 7px; background: radial-gradient(ellipse at center,#eaca92 35%,transparent 60%) right center / 7px 7px no-repeat, linear-gradient(90deg,transparent,#d1a479aa) left center / calc(100% - 9px) 1px no-repeat }
 .catalog-title::after { transform: scaleX(-1) }
-.book-tabs { display: flex; justify-content: center; gap: 8px; margin: 14px auto 21px }
-.book-tabs a { padding: 5px 22px; border: 1px solid #bb9ba27a; background: #211c34df; border-radius: 24px; text-align: center; font-size: 16px; font-weight: 600 }
-.book-tabs a:hover { background: #3b2b44 }
-.book-tabs a[aria-current] { color: #2b1e30; background: #efcf9f; border-color: #fae0b1 }
+.book-tabs {
+  --gilt-rim: linear-gradient(120deg,#97672e,#fff0b8 17%,#be8744 33%,#805023 55%,#f5d99a 78%,#a36e32);
+  --engraving: url("lotus-engraving.svg");
+  display: flex; justify-content: center; gap: 12px; margin: 19px auto 23px;
+}
+.book-tabs a {
+  display: grid; min-height: 46px; border-radius: 999px; text-align: center;
+  font-size: 16px; font-weight: 600; color: #fff3d6;
+  background: linear-gradient(95deg,#654023,#a5773d 13%,#6c4424 48%,#ae8048 85%,#56331c);
+  box-shadow: inset 0 -1px 0 #d3a462, 0 4px 7px #100b2099;
+}
+.book-tabs a span {
+  position: relative; display: grid; place-items: center; overflow: hidden;
+  padding: 5px 34px; border: 2px solid transparent; border-radius: inherit;
+  background: linear-gradient(100deg,#174b61ad,#231e3eea 30%,#30203fe8 70%,#544172ad) padding-box,
+    url("vishanti-sky-small.webp") center 40% / cover padding-box, var(--gilt-rim) border-box;
+  box-shadow: inset 0 0 0 1px #684b3a, inset 0 0 0 2px #fce4a885, inset 0 3px 7px #150e23a3;
+  text-shadow: 0 1px 3px #120d20;
+  transform: translateY(-3px); pointer-events: none;
+  transition: transform 160ms ease-out, filter 160ms ease-out;
+}
+.book-tabs a span::before, .book-tabs a span::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+}
+.book-tabs a span::before {
+  background: linear-gradient(105deg,#acf9ff,#ffe9ad 22%,#ffd38b 70%,#f3d4ff);
+  mask: var(--engraving) left 8px center / 17px 17px no-repeat,
+    var(--engraving) right 8px center / 17px 17px no-repeat;
+}
+.book-tabs a span::after {
+  opacity: 0;
+  background: radial-gradient(ellipse at center,#fff3c896 0%,#b7efff58 27%,#cfafff38 52%,transparent 73%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .book-tabs a:where(:not([aria-current])):hover span {
+    transform: translateY(-6px) perspective(360px) rotateX(5deg);
+    filter: brightness(1.13);
+  }
+}
+.book-tabs a[aria-current] {
+  color: #392315;
+  box-shadow: 0 0 0 1px #a67a48, 0 0 12px #ae95f35e, 0 2px 5px #120e24aa;
+}
+.book-tabs a[aria-current] span {
+  transform: translateY(-1px);
+  background: linear-gradient(115deg,#f7e1a84d,transparent 36%,#8e5b3030 63%,#fbdd9a40) padding-box,
+    linear-gradient(#dfbd83,#ecd2a1 38%,#d4ad75 76%,#bc925c) padding-box, var(--gilt-rim) border-box;
+  box-shadow: inset 0 0 0 1px #805b37, inset 0 0 0 3px #fff0c04a;
+  text-shadow: none;
+}
+.book-tabs a[aria-current] span::before {
+  background: #77522f;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .book-tabs a[aria-current] span::after { animation: seal-light 650ms ease-out }
+  @keyframes seal-light {
+    from { transform: scaleX(.12); opacity: .18 }
+    35% { opacity: .75 }
+    to { transform: scaleX(1.35); opacity: 0 }
+  }
+}
+.book-tabs a:active span {
+  transform: translateY(0); filter: brightness(.96);
+}
+.book-tabs a:active span::after { animation: none; opacity: .35 }
+@media (forced-colors: active) {
+  .book-tabs a[aria-current] span { border: 3px double Highlight }
+}
 .book-section,.shelf,.note { scroll-margin: 18px }
 .book-meta,.shelf-head,.rail-controls,.intro-link,.text-link { display: flex; align-items: center }
 .book-meta { justify-content: space-between; border-top: 1px solid var(--line); padding-top: 9px }
 .book-meta h2,.range,.overline,.card-foot small,.verse-list small { font: 600 14px/1.5 var(--type); color: var(--muted); font-variant-numeric: tabular-nums }
 .intro-link,.text-link { display: inline-flex; gap: 6px; color: var(--gold); font-size: 15px; font-weight: 600 }
 .intro-link:hover,.text-link:hover,.crumb a:hover,.library-link:hover { text-decoration: underline; text-underline-offset: 4px }
-.shelf { padding: 12px 0 19px }
-.shelf-head { gap: 15px }
+.shelf { --art-height: clamp(146px,13vw,196px); padding: 12px 0 19px }
+.shelf-head { position: relative; z-index: 1; gap: 15px }
 .shelf h3 { font-size: clamp(21px,2.1vw,30px) }
 .rail-controls { gap: 8px; margin-left: auto }
 .round,.icon-button { width: 34px; height: 34px; display: grid; place-items: center; padding: 0 }
@@ -97,24 +184,50 @@ svg { flex: none }
 .rail {
   display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 3 * 18px) / 4); gap: 18px;
   overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #aa93ad60 transparent;
-  padding: 12px 4px 10px;
+  /* Horizontal scrolling also clips vertically. Reserve room for the tilted halo at full pointer travel. */
+  padding: calc(var(--art-height) * .28 + 15px) 4px 10px;
+  margin-block-start: -24px;
 }
 .chapter-card { position: relative; min-width: 0; display: grid; justify-items: center; align-content: end; scroll-snap-align: start; border-radius: 7px; text-align: center }
-.art { position: relative; width: 100%; display: grid; place-items: center; height: clamp(146px,13vw,196px); perspective: 850px }
+.art { position: relative; width: 100%; display: grid; place-items: center; height: var(--art-height); perspective: 850px }
 .art::before { content: ""; position: absolute; bottom: 0; width: 73%; height: 10%; border-radius: 50%; background: radial-gradient(ellipse,#debff140,transparent 69%) }
 .art::after { content: ""; position: absolute; bottom: 3%; height: 1px; width: 64%; background: linear-gradient(90deg,transparent,#edcb9d88,transparent); pointer-events: none }
-.volume {
-  position: relative; display: block; aspect-ratio: .73; height: 84%; transform-style: preserve-3d;
-  transform: rotateY(-17deg) rotateZ(-3deg); transition: transform .4s;
-  --binding: #44334f; --binding-edge: #211c36;
+.chapter-aura {
+  position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 47%;
+  height: 132%; aspect-ratio: 1.06; max-width: 106%;
+  opacity: 0; transform: translate(-50%,-50%); transition: opacity 240ms ease-out, transform 150ms ease-out;
+  background: radial-gradient(ellipse at 35% 53%,#b5e7ff5c,transparent 52%),
+    radial-gradient(ellipse at 65% 39%,#d8b5ff73,transparent 54%),
+    radial-gradient(ellipse at center,#ffd99b8c 15%,#efc9aa40 46%,transparent 71%);
+  mask-image: radial-gradient(ellipse closest-side,#000 44%,transparent 100%);
 }
-.chapter-card:nth-child(3n + 2) .volume { --binding: #304c57; --binding-edge: #1b2b42 }
-.chapter-card:nth-child(3n) .volume { --binding: #614451; --binding-edge: #352334 }
+.chapter-aura::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; opacity: .55; filter: blur(.7px);
+  background: repeating-conic-gradient(from 8deg,transparent 0deg 10deg,#f5dcba7a 12deg,
+    transparent 15deg 29deg,#c7c4fa6b 30deg,transparent 33deg 43deg);
+}
+.chapter-card:focus-visible .chapter-aura { opacity: .65 }
+@media (any-hover: hover) {
+  .chapter-card.shimmer-hover .chapter-aura { opacity: .82 }
+}
+@media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
+  .chapter-card.shimmer-hover .chapter-aura {
+    transform: translate(calc(-50% + var(--shimmer-x,0) * 14px),calc(-50% + var(--shimmer-y,0) * 9px))
+      rotate(calc(var(--shimmer-x,0) * 7deg));
+  }
+  .chapter-card.shimmer-hover .chapter-aura::after { animation: chapter-rays 2.8s ease-in-out infinite alternate }
+  .chapter-card.shimmer-hover .cover-face { --foil-reflection: #fff3cf32 }
+  @keyframes chapter-rays { from { rotate: -2deg; opacity: .4 } to { rotate: 3deg; opacity: .68 } }
+}
+.volume {
+  position: relative; display: block; aspect-ratio: .75; height: 86%; transform-style: preserve-3d;
+  transform: rotateY(-17deg) rotateZ(-3deg); transition: transform .4s;
+}
 .page-block,.front-cover,.cover-face,.inside-cover { position: absolute; inset: 0; border-radius: 2px 5px 5px 2px }
 .page-block {
   display: grid; place-items: center; border: 1px solid #ba965c; transform: translateZ(-2px);
   background: linear-gradient(90deg,#9a7757 0%,#e9cd9f 8%,#fae7c2 23%,#efdbaf 91%,#b79c77);
-  box-shadow: 2px 1px #bfa079,3px 2px #674c43,4px 3px #d8b98b,6px 4px #694e45,8px 5px #b29572,10px 7px 13px #0e091f6b;
+  box-shadow: 2px 1px #ffe29b,3px 2px #9b6a32,4px 3px #f3d18b,6px 4px #966536,8px 5px #c89a51,10px 7px 13px #0e091f6b;
 }
 .page-block::before,.inside-cover::before { content: ""; position: absolute; inset: 7%; border: 1px solid #a782519c; outline: 1px solid #b6946880; outline-offset: -4px }
 .manuscript { display: grid; gap: 3px; width: 72%; color: #5c432d; font: 600 clamp(5px,.58vw,9px)/1.5 var(--display); text-align: center }
@@ -122,16 +235,33 @@ svg { flex: none }
 .front-cover { transform-style: preserve-3d; transform-origin: left center; transform: rotateY(0deg) }
 .cover-face,.inside-cover { backface-visibility: hidden; -webkit-backface-visibility: hidden }
 .cover-face {
-  border: 1px solid #bb9366; display: flex; flex-flow: column; align-items: center; justify-content: space-evenly; padding: 9% 9% 8% 13%;
-  background: linear-gradient(90deg,#1e1a2c 1%,#a78964 4%,var(--binding-edge) 6%,var(--binding) 11%,var(--binding-edge) 110%);
+  container-type: inline-size; overflow: hidden; background: #d4aa66; color: #402516;
 }
-.cover-face::before { content: ""; position: absolute; inset: 4% 5% 4% 9%; border: 1px solid #b49a72; outline: 1px solid #a58a677a; outline-offset: -3px; border-radius: 1px 3px 3px 1px }
-.cover-number { font: 600 clamp(12px,1.1vw,16px)/1.1 Georgia,serif; letter-spacing: .12em; color: #f0d29c }
-.miniature { width: 81%; height: 66%; display: block; overflow: hidden; border-radius: 50% 50% 6% 6%; border: 1px solid #c7a571; background: #eddabc }
-.miniature img { height: 100%; width: 100%; display: block; object-fit: cover; mix-blend-mode: multiply }
-.cover-tooling { width: 8px; aspect-ratio: 1; border: 1px solid #d3ab71; transform: rotate(45deg) }
+.cover-plate { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none }
+.cover-number {
+  position: absolute; left: 53%; transform: translate(-50%,-50%); white-space: nowrap;
+  text-shadow: 0 1px 0 #ffe3a094;
+  top: 11%; font: 700 14cqw/1 Georgia,serif; letter-spacing: .04em;
+}
+.miniature { position: absolute; left: 16.5%; top: 19%; width: 72%; height: 57.5%; background: #f1dfb6 }
+.miniature img { height: 100%; width: 100%; display: block; object-fit: contain }
+@media (prefers-reduced-motion: no-preference) {
+  .cover-face::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    mask: url("antique-gilt.webp") center / 100% 100% no-repeat;
+    background: radial-gradient(ellipse at calc(50% + var(--shimmer-x,0) * 44%) calc(50% + var(--shimmer-y,0) * 38%),
+        var(--foil-reflection,transparent),transparent 53%) center / 100% 100% no-repeat,
+      linear-gradient(115deg,transparent 40%,#ffedc966 49%,transparent 57%) 100% 0 / 280% 100% no-repeat;
+  }
+  .chapter-card:is(:hover,:focus-visible) .cover-face::after { animation: cover-glint .8s ease-out }
+  @keyframes cover-glint { from { background-position: center,100% 0 } to { background-position: center,0 0 } }
+}
 .inside-cover { display: grid; place-items: center; transform: rotateY(180deg); background: linear-gradient(90deg,#dcc298,#f8e6c4 47%,#cfac7f); border: 1px solid #a9865d }
 .inside-cover img { width: 69%; height: 69%; object-fit: contain; mix-blend-mode: multiply; mask-image: radial-gradient(ellipse,#000 55%,transparent 82%) }
+.inside-cover::after {
+  content: ""; position: absolute; inset: 0; background: #96703e;
+  mask: url("lotus-engraving.svg") center 7% / 14% auto no-repeat, url("lotus-engraving.svg") center 93% / 14% auto no-repeat;
+}
 .card-foot { display: flex; align-items: baseline; justify-content: center; gap: 7px; padding: 5px 2px; text-shadow: 0 1px 7px #161022 }
 .card-foot small,.overline,.verse-list small { color: var(--gold) }
 .card-foot strong { font: 650 clamp(15px,1.4vw,20px)/1.5 var(--display); overflow-wrap: anywhere }
@@ -220,6 +350,7 @@ dialog::backdrop { background: #100b237f; backdrop-filter: blur(4px) }
 #results a:hover { background: #322a40 }
 #results small { display: block; color: var(--gold) }
 @media (max-width: 900px) {
+  .teacher-intro { grid-template-columns: minmax(0,1fr); justify-items: center; margin-inline: 0 }
   .rail { grid-auto-columns: calc((100% - 28px) / 3); gap: 14px }
   .reader-layout { grid-template-columns: 125px minmax(0,1fr); gap: 18px }
 }
@@ -236,24 +367,24 @@ dialog::backdrop { background: #100b237f; backdrop-filter: blur(4px) }
   .search-open { padding: 4px 10px; gap: 6px }
   .hero { background-position: center,66% center; background-image: linear-gradient(0deg,#1c182fe8,transparent 85%),var(--sky) }
   .hero-inner { display: flex; flex-direction: column-reverse; min-height: auto }
-  .hero-copy { width: 100%; text-align: center; padding: 0 0 29px; margin-top: -6px }
-  .collection-size { font-size: 13px }
-  .hero h1 { margin: 3px 0; font-size: clamp(44px,12vw,65px) }
-  .hero-verse { font-size: clamp(17px,4.5vw,23px) }
-  .rule { margin: 5px auto 11px; width: 49px }
-  .verse-source { margin-bottom: 11px }
-  .cta { font-size: 15px; padding: 6px 18px }
+  .teacher-intro { width: 100%; padding: 10px 0 26px }
+  .teacher-credit strong { font-size: clamp(18px,4.4vw,23px) }
+  .teacher-credit span { font-size: 14px }
   .stage { height: 152px; width: 60%; margin: 9px auto 4px }
   .flat-book { width: 75px }
   .catalog { padding-block: 22px 40px }
-  .book-tabs { gap: 5px; margin-block: 10px 16px }
-  .book-tabs a { flex: 1; padding: 6px 3px; font-size: clamp(12px,3.5vw,16px) }
+  .book-tabs { gap: 7px; margin-block: 15px 18px }
+  .book-tabs a { flex: 1; min-width: 0; font-size: clamp(12px,3.5vw,16px) }
+  .book-tabs a span { padding: 6px 3px }
+  .book-tabs a span::before {
+    mask-position: center top 1px, center bottom 1px; mask-size: 9px 8px;
+  }
   .shelf-head { gap: 8px; flex-wrap: wrap }
   .range { font-size: 12px }
   .round { width: 31px; height: 31px }
   .intro-link { font-size: 13px }
   .rail { grid-auto-columns: minmax(127px,44%); gap: 12px }
-  .art { height: 139px }
+  .shelf { --art-height: 139px }
   .card-foot { gap: 4px }
   .card-foot strong { font-size: 15px }
   .reading { padding-block: 14px 38px }

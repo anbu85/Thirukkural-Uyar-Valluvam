@@ -1,12 +1,133 @@
 // The illustrated cover is a regular chapter link even without WebGL or motion.
 const link=document.querySelector('.book-link');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+
+// Reuse a tapered brush for each colour while the individual shafts move in waves.
+function rayBrush(colour) {
+  const brush = document.createElement('canvas');
+  brush.width = 160;
+  brush.height = 32;
+  const ctx = brush.getContext('2d');
+  if (!ctx) return null;
+  const light = ctx.createLinearGradient(0,0,brush.width,0);
+  light.addColorStop(0,'#fff5ff00');
+  light.addColorStop(.26,'#fff5fff0');
+  light.addColorStop(.58,colour + 'ae');
+  light.addColorStop(1,colour + '00');
+  ctx.fillStyle = light;
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.quadraticCurveTo(55,5,160,16);
+  ctx.quadraticCurveTo(50,26,0,32);
+  ctx.fill();
+  return brush;
+}
+
+function setupShimmer() {
+  const aura = document.querySelector('.book-aura');
+  const colours = ['#75e2ff','#bea7ff','#ffb5e0'].map(rayBrush);
+  let seed = 4019;
+  function random() {
+    seed = (Math.imul(seed,1664525) + 1013904223) >>> 0;
+    return seed / 4294967296;
+  }
+  const layers = Array.from(aura.querySelectorAll('canvas'), (canvas,layer) => {
+    canvas.width = 640;
+    canvas.height = 560;
+    const ctx = canvas.getContext('2d');
+    const count = layer === 0 ? 31 : 87;
+    const rays = Array.from({length:count}, (_,i) => {
+      const angle = 2 * Math.PI * (i + random() * .88) / count;
+      const x = Math.cos(angle), y = Math.sin(angle);
+      const edge = Math.min(82 / Math.abs(x),111 / Math.abs(y));
+      return {
+        angle, x, y, root:edge * .64, length:edge * .36 + 30 + random() * 92,
+        width:layer === 0 ? 15 + random() * 22 : 2 + random() * 7,
+        phase:random() * Math.PI * 2,
+        brush:colours[x < -.2 && y > -.55 ? 0 : y < -.35 ? 1 : 2]
+      };
+    });
+    return {ctx,rays,strength:layer === 0 ? .48 : 1};
+  });
+  if (colours.includes(null) || layers.some(layer => !layer.ctx)) return;
+  let targetX = 0, targetY = 0, pointerX = 0, pointerY = 0;
+  let visible = true, frame = 0, lastPaint = null, time = 0;
+
+  function paint() {
+    for (const {ctx,rays,strength} of layers) {
+      ctx.resetTransform();
+      ctx.clearRect(0,0,640,560);
+      ctx.globalCompositeOperation = 'lighter';
+      for (const ray of rays) {
+        // A crest travels around the cover while neighbouring rays flicker out of phase.
+        const crest = Math.sin(time * 2.7 - ray.angle * 3);
+        const ripple = .60 * crest + .40 * Math.sin(time * 4.1 + ray.phase);
+        const facing = pointerX * ray.x + pointerY * ray.y;
+        const lean = pointerY * ray.x - pointerX * ray.y;
+        const angle = ray.angle + ripple * .047 + lean * .085;
+        const x = Math.cos(angle), y = Math.sin(angle);
+        const length = ray.length * (1.04 + .27 * ripple + .12 * facing);
+        ctx.setTransform(x,y,-y,x,320 + pointerX * 4,280 + pointerY * 4);
+        ctx.globalAlpha = Math.min(1,strength * (.72 + .28 * ripple + .22 * Math.max(0,facing)));
+        ctx.drawImage(ray.brush,ray.root,-ray.width / 2,length,ray.width);
+      }
+    }
+  }
+
+  function tick(now) {
+    const elapsed = lastPaint === null ? 34 : now - lastPaint;
+    if (elapsed >= 32) {
+      lastPaint = now;
+      const dt = Math.min(elapsed / 1000,.08);
+      time += dt;
+      const ease = 1 - Math.exp(-dt * 8);
+      pointerX += (targetX - pointerX) * ease;
+      pointerY += (targetY - pointerY) * ease;
+      paint();
+    }
+    frame = requestAnimationFrame(tick);
+  }
+  function sync() {
+    cancelAnimationFrame(frame);
+    lastPaint = null;
+    if (reduced.matches || !visible || document.hidden) {
+      targetX = targetY = pointerX = pointerY = 0;
+      if (reduced.matches) { time = 0; paint(); }
+      return;
+    }
+    frame = requestAnimationFrame(tick);
+  }
+  function track(event) {
+    if (event.pointerType === 'touch' || reduced.matches) return;
+    const rect = link.getBoundingClientRect();
+    const limit = value => Math.max(-1,Math.min(1,value));
+    targetX = limit((event.clientX - rect.left - rect.width / 2) / (rect.height * .36));
+    targetY = limit((event.clientY - rect.top - rect.height / 2) / (rect.height * .45));
+  }
+  function release() { targetX = targetY = 0; }
+  link.addEventListener('pointermove',track);
+  link.addEventListener('pointerleave',release);
+  link.addEventListener('pointercancel',release);
+  reduced.addEventListener('change',sync);
+  document.addEventListener('visibilitychange',sync);
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      aura.classList.toggle('out-of-view',!visible);
+      sync();
+    });
+    observer.observe(link);
+  }
+  sync();
+}
+setupShimmer();
+
 let dispose;
 async function setup(){
   if(reduced.matches||dispose)return;
   const T=await import('./three.module.min.js');
-  const art=link.querySelector('img');
-  await Promise.all([art.decode(),document.fonts.ready]);
+  const coverImage=link.querySelector('.flat-book');
+  await coverImage.decode();
   if(reduced.matches||dispose)return;
   const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -15,37 +136,26 @@ async function setup(){
   const scene=new T.Scene(), book=new T.Group();
   const camera=new T.PerspectiveCamera(30,1,.1,40);
   camera.position.set(0,0,7.9);
-  const textureCanvas=document.createElement('canvas');
-  textureCanvas.width=640;textureCanvas.height=860;
-  const c=textureCanvas.getContext('2d');
-  c.fillStyle='#30294c';c.fillRect(0,0,640,860);
-  // A cloth grain and a foil-stamped frame remain sharp when the cover tilts.
-  for(let y=0;y<860;y+=3){c.fillStyle=y%2?'#ffffff09':'#00000011';c.fillRect(0,y,640,1);}
-  for(let x=0;x<640;x+=3){c.fillStyle=x%2?'#ffffff0a':'#0000000c';c.fillRect(x,0,1,860);}
-  const hinge=c.createLinearGradient(0,0,53,0);
-  for(const [t,col] of [[0,'#19152d'],[.24,'#524167'],[.52,'#30263f'],[.69,'#1d172d'],[1,'#302643']])hinge.addColorStop(t,col);
-  c.fillStyle=hinge;c.fillRect(0,0,52,860);
-  c.strokeStyle='#e3b779';c.lineWidth=3;c.strokeRect(57,22,560,811);c.lineWidth=1.5;c.strokeRect(64,29,546,797);
-  for(const [x,y,sx,sy] of [[70,35,1,1],[604,35,-1,1],[70,820,1,-1],[604,820,-1,-1]]){
-    c.save();c.translate(x,y);c.scale(sx,sy);c.beginPath();c.moveTo(0,42);c.bezierCurveTo(18,32,12,16,35,15);c.bezierCurveTo(12,13,18,5,43,0);c.moveTo(7,6);c.lineTo(14,13);c.lineTo(6,19);c.lineTo(0,12);c.closePath();c.stroke();c.restore();
-  }
-  c.fillStyle='#ead19b';c.textAlign='center';c.font='bold 52px "Tamil Sangam MN", "Noto Serif Tamil", serif';c.fillText('திருக்குறள்',337,123,450);
-  // Arch-shaped illustration uses the app's actual first chapter watercolor.
-  c.beginPath();c.moveTo(93,745);c.lineTo(93,335);c.bezierCurveTo(93,254,159,203,199,203);c.bezierCurveTo(238,163,280,160,337,139);c.bezierCurveTo(394,160,436,163,475,203);c.bezierCurveTo(515,203,581,254,581,335);c.lineTo(581,745);c.closePath();
-  c.save();c.clip();c.fillStyle='#e8ccab';c.fillRect(90,138,500,610);c.drawImage(art,96,153,483,595);c.restore();c.lineWidth=5;c.strokeStyle='#c6a064';c.stroke();
-  c.font='26px "Tamil Sangam MN",serif';c.fillText('உயர் வள்ளுவம்',337,798,380);
-  const coverMap=new T.CanvasTexture(textureCanvas);coverMap.colorSpace=T.SRGBColorSpace;
-  coverMap.anisotropy=renderer.capabilities.getMaxAnisotropy();
+  // Upload at the artwork's native size, independent of the CSS-scaled fallback.
+  const coverCanvas=document.createElement('canvas');
+  coverCanvas.width=coverImage.naturalWidth;
+  coverCanvas.height=coverImage.naturalHeight;
+  coverCanvas.getContext('2d').drawImage(coverImage,0,0);
+  const cover=new T.CanvasTexture(coverCanvas);
+  cover.colorSpace=T.SRGBColorSpace;
+  cover.anisotropy=renderer.capabilities.getMaxAnisotropy();
   const pages=document.createElement('canvas');pages.width=128;pages.height=4;
-  const pc=pages.getContext('2d');pc.fillStyle='#f1dfb4';pc.fillRect(0,0,128,4);
-  for(let x=0;x<128;x+=3){pc.fillStyle=x%2?'#c6b08b':'#dfcaa3';pc.fillRect(x,0,1,4);}
+  const pc=pages.getContext('2d');pc.fillStyle='#e5c07e';pc.fillRect(0,0,128,4);
+  for(let x=0;x<128;x+=3){pc.fillStyle=x%2?'#b7894a':'#ffe7ad';pc.fillRect(x,0,1,4);}
   const edges=new T.CanvasTexture(pages);edges.colorSpace=T.SRGBColorSpace;
   const surface=(color,map)=>new T.MeshStandardMaterial({color,map:map||null,roughness:.94});
-  const cloth=surface(0x382b47), edge=surface(0xffffff,edges), paper=surface(0xf3dfb7), front=surface(0xffffff,coverMap);
+  const binding=new T.MeshStandardMaterial({color:0xb18448,metalness:.36,roughness:.49});
+  const edge=surface(0xffffff,edges), paper=surface(0xf3dfb7);
+  const front=new T.MeshStandardMaterial({map:cover,metalness:.32,roughness:.54,bumpMap:cover,bumpScale:.012});
   function block(w,h,d,z,material){const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),material);mesh.position.z=z;book.add(mesh);}
-  block(2.3,3.1,.07,-.15,cloth);
-  block(2.25,3.03,.26,0,[edge,cloth,edge,edge,paper,paper]);
-  block(2.3,3.1,.07,.15,[cloth,cloth,cloth,cloth,front,cloth]);
+  block(2.3,3.1,.07,-.15,binding);
+  block(2.25,3.03,.26,0,[edge,binding,edge,edge,paper,paper]);
+  block(2.3,3.1,.07,.15,[binding,binding,binding,binding,front,binding]);
   scene.add(book,new T.AmbientLight(0xfff3de,1.7));
   const sun=new T.DirectionalLight(0xfff6e3,2.0);sun.position.set(-3,5,7);scene.add(sun);
   const fill=new T.DirectionalLight(0xffdfab,.6);fill.position.set(4,1,1);scene.add(fill);
@@ -91,7 +201,7 @@ async function setup(){
     link.removeEventListener('pointerup',touchEnd);link.removeEventListener('pointercancel',touchEnd);
     link.removeEventListener('click',openCover);
     cancelAnimationFrame(frame);book.children.forEach(m=>m.geometry.dispose());
-    [cloth,edge,paper,front,coverMap,edges].forEach(o=>o.dispose());
+    [binding,edge,paper,front,cover,edges].forEach(o=>o.dispose());
     renderer.domElement.remove();renderer.dispose();dispose=null;
   };
   renderer.domElement.addEventListener('webglcontextlost',()=>dispose?.(),{once:true});
