@@ -38,6 +38,13 @@ if(books.length){
   });
   if(location.hash) requestAnimationFrame(()=>document.getElementById(location.hash.slice(1))?.scrollIntoView({behavior:'instant'}));
 }
+if (books.length && 'IntersectionObserver' in window) {
+  const visibleCards = new IntersectionObserver(entries => {
+    for (const entry of entries) entry.target.classList.toggle('in-view', entry.isIntersecting);
+  });
+  for (const card of document.querySelectorAll('.chapter-card')) visibleCards.observe(card);
+}
+
 const railUpdates=[];
 function updateRails(){for(const fn of railUpdates)fn();}
 for(const shelf of document.querySelectorAll('.shelf')){

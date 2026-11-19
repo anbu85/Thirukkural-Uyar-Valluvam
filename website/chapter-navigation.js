@@ -12,16 +12,18 @@ const animations = new Set();
 let activeView;
 let visit = 0;
 let three;
+let clearStreams;
 
 function stopMotion() {
+  clearStreams?.();
   for (const animation of animations) animation.cancel();
   animations.clear();
 }
 reduced.addEventListener('change', stopMotion);
 
-function animate(element, keyframes, duration, delay = 0) {
+function animate(element, keyframes, duration, delay = 0, easing = 'cubic-bezier(.22,.68,.16,1)') {
   const animation = element.animate(keyframes, {
-    duration, delay, fill: 'both', easing: 'cubic-bezier(.22,.68,.16,1)'
+    duration, delay, fill: 'both', easing
   });
   animations.add(animation);
   return animation.finished.catch(() => {});
@@ -59,26 +61,124 @@ function scatter(selected) {
   return Promise.all(work);
 }
 
-function assemble(view, sourceArt) {
-  const work = [];
-  if (sourceArt) {
-    const image = view.querySelector('.chapter-intro img');
-    const dest = image.getBoundingClientRect();
-    const scale = Math.min(2.1, sourceArt.width / dest.width);
-    const x = sourceArt.left + sourceArt.width / 2 - dest.left - dest.width / 2;
-    const y = sourceArt.top + sourceArt.height / 2 - dest.top - dest.height / 2;
-    work.push(animate(image, [
-      {transform:pose(x,y,0,0,-.16) + ' scale(' + scale + ')'}, {transform:rest}
-    ], 495));
+// Paths are in chapter coordinates, so each stream reaches its own verse at any screen width.
+function drawStreams(view, flights) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const width = view.clientWidth;
+  const height = Math.min(view.scrollHeight, Math.ceil(innerHeight * 1.5));
+  const dpr = Math.min(devicePixelRatio, 1.5);
+  canvas.className = 'verse-stream';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas.width = Math.ceil(width * dpr);
+  canvas.height = Math.ceil(height * dpr);
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  view.append(canvas);
+  ctx.scale(dpr, dpr);
+  ctx.lineCap = 'round';
+  ctx.globalCompositeOperation = 'lighter';
+  let frame;
+  clearStreams = () => {
+    cancelAnimationFrame(frame);
+    canvas.remove();
+    clearStreams = null;
+  };
+  const start = performance.now();
+  function paint(now) {
+    ctx.clearRect(0, 0, width, height);
+    const elapsed = now - start;
+    const emission = Math.min(1, (elapsed - 220) / 180, (flights.at(-1).delay + 180 - elapsed) / 270);
+    if (emission > 0) {
+      const spine = flights[0].curve.v0;
+      const radius = 40;
+      const glow = ctx.createRadialGradient(spine.x,spine.y,0,spine.x,spine.y,radius);
+      glow.addColorStop(0,'#fff3d9');
+      glow.addColorStop(.13,'#ffe5abdd');
+      glow.addColorStop(.45,'#ffcbae55');
+      glow.addColorStop(1,'#dcaeff00');
+      ctx.globalAlpha = emission;
+      ctx.fillStyle = glow;
+      ctx.fillRect(spine.x-radius,spine.y-radius,radius*2,radius*2);
+    }
+    for (const {curve, delay, color} of flights) {
+      const t = (now - start - delay) / travelTime;
+      if (t <= 0 || t >= 1.27) continue;
+      const head = Math.min(1, t);
+      const tail = Math.max(0, t - .27);
+      const p = curve.getPoint(head);
+      const alpha = Math.min(1, t * 8, (1.27 - t) * 4);
+      ctx.beginPath();
+      for (let i = 0; i <= 14; i++) {
+        const point = curve.getPoint(tail + (head - tail) * i / 14);
+        if (i === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+      }
+      for (const [weight,opacity] of [[14,.1],[6,.22],[2.5,.55],[1,.96]]) {
+        ctx.lineWidth = weight;
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = alpha * opacity;
+        ctx.stroke();
+      }
+      const halo = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,11);
+      halo.addColorStop(0,'#fff3da');
+      halo.addColorStop(.24,color);
+      halo.addColorStop(1,color + '00');
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = halo;
+      ctx.fillRect(p.x-11,p.y-11,22,22);
+    }
+    if (now - start < flights.at(-1).delay + travelTime * 1.27) frame = requestAnimationFrame(paint);
+    else clearStreams?.();
   }
-  const rows = view.querySelectorAll('.verse-list > a');
-  rows.forEach((row,index) => {
-    const side = index % 2 ? 1 : -1;
-    work.push(animate(row, [
-      {transform:pose(side * Math.min(innerWidth * .18,160),65,-245,-.38,side * .35,side * .035),opacity:0},
-      {transform:rest,opacity:1}
-    ], 510, index * 30));
+  frame = requestAnimationFrame(paint);
+}
+
+const travelTime = 570;
+function assemble(view, sourceBook) {
+  const work = [];
+  const book = view.querySelector('.volume-open');
+  const cover = book.querySelector('.front-cover');
+  const viewBox = view.getBoundingClientRect();
+  const dest = book.getBoundingClientRect();
+  const settled = getComputedStyle(book).transform;
+  if (sourceBook) {
+    const dx = sourceBook.left + sourceBook.width / 2 - dest.left - dest.width / 2;
+    const dy = sourceBook.top + sourceBook.height / 2 - dest.top - dest.height / 2;
+    const scale = Math.max(.5,Math.min(2,sourceBook.width / dest.width));
+    work.push(animate(book, [
+      {transform:'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ') ' + settled},
+      {transform:settled}
+    ], 385));
+  }
+  work.push(animate(cover,[{transform:'rotateY(0deg)'},{transform:'rotateY(-150deg)'}], 510, 150));
+
+  const start = new three.Vector2(dest.left - viewBox.left + dest.width * .12, dest.top - viewBox.top + dest.height * .45);
+  const flights = [];
+  view.querySelectorAll('.verse-list > a').forEach((row,index) => {
+    const rect = row.getBoundingClientRect();
+    const end = new three.Vector2(rect.left - viewBox.left + rect.width * .5, rect.top - viewBox.top + rect.height * .5);
+    const fan = (index % 2 ? 1 : -1) * Math.min(80,viewBox.width * .13);
+    const crest = new three.Vector2(start.x + fan, start.y - 72);
+    const approach = new three.Vector2(end.x + fan * .8, end.y - Math.min(155,rect.top - dest.top));
+    const curve = new three.CubicBezierCurve(start,crest,approach,end);
+    const delay = 355 + index * 56;
+    flights.push({curve,delay,color:index % 3 === 1 ? '#b9dcff' : '#ffd39c'});
+    const frames = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10;
+      const point = curve.getPoint(t);
+      const scale = .065 + .935 * t * t;
+      frames.push({
+        offset:t,
+        transform:pose(point.x - end.x,point.y - end.y,0,(1-t)*-.28,(1-t)*.22) + ' scale(' + scale + ')',
+        opacity:Math.max(0,(t - .18) / .82)
+      });
+    }
+    work.push(animate(row,frames,travelTime,delay,'linear'));
   });
+  drawStreams(view,flights);
   return Promise.all(work);
 }
 
@@ -117,7 +217,8 @@ async function showChapter(url, selected) {
     if (ticket !== visit) return;
     three = engine;
     const canAnimate = Boolean(selected && three && !reduced.matches && Element.prototype.animate);
-    const art = selected?.querySelector('.art')?.getBoundingClientRect();
+    const source = selected?.querySelector('.volume, .flat-book');
+    const sourceBook = source?.getBoundingClientRect();
     if (canAnimate) await scatter(selected);
     if (ticket !== visit) return;
     if (selected) {
@@ -137,7 +238,7 @@ async function showChapter(url, selected) {
     heading.tabIndex = -1;
     heading.focus({preventScroll:true});
     main.removeAttribute('aria-busy');
-    if (canAnimate && !reduced.matches) await assemble(activeView, art);
+    if (canAnimate && !reduced.matches) await assemble(activeView, sourceBook);
   } catch {
     if (ticket === visit) location.assign(url);
   } finally {
