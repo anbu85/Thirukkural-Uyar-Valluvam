@@ -16,6 +16,7 @@ function updateBook() {
 }
 if(books.length){
   updateBook();
+  addEventListener('libraryshown',()=>{updateBook();updateRails();});
   for(const tab of tabs) tab.addEventListener('click',event=>{
     if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey) return;
     event.preventDefault();
@@ -23,7 +24,8 @@ if(books.length){
     updateBook();
     requestAnimationFrame(updateRails);
   });
-  addEventListener('hashchange',()=>{
+  addEventListener('hashchange',event=>{
+    if(new URL(event.oldURL).pathname !== new URL(event.newURL).pathname)return;
     updateBook();
     requestAnimationFrame(()=>{updateRails();document.getElementById(location.hash.slice(1))?.scrollIntoView({behavior:'instant'});});
   });

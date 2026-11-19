@@ -100,3 +100,27 @@ dialog{color:var(--ink);background:var(--paper);border:1px solid var(--line);bor
   .hero::after,main:has(> .reading)::after,.catalog-title::before,.catalog-title::after{display:none}
 }
 
+
+main:has(> .chapter-view){overflow-x:clip}
+.chapter-view .verse-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.chapter-view .verse-list>a{
+  grid-template-columns:1fr auto;
+  align-content:center;
+  gap:4px 12px;
+  padding:14px 18px 17px;
+  background:linear-gradient(115deg,#faf2e3,#fffaf1);
+  border:1px solid var(--line);
+  border-inline-start:3px solid #bb9a68;
+  border-radius:3px 10px 10px 3px;
+}
+.chapter-view .verse-list small{grid-column:1;color:#7b5b37;font-size:12px}
+.chapter-view .verse-list .verse{grid-column:1;font-size:clamp(16px,1.36vw,20px)}
+.chapter-view .verse-list svg{grid-column:2;grid-row:1 / 3;color:#957a54}
+.chapter-view .verse-list>a:hover,.chapter-view .verse-list>a:focus-visible{background:#f4ead5;border-color:#ab8957}
+.chapter-view h1:focus{outline:none}
+@media(max-width:850px){.chapter-view .verse-list{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:650px){.chapter-view .verse-list{gap:9px}.chapter-view .verse-list>a{padding:10px 12px 13px}}
