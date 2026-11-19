@@ -29,8 +29,9 @@ h1,h2,h3,p { margin: 0 }
 h1,h2,h3 { font-family: var(--display); line-height: 1.35 }
 svg { flex: none }
 [hidden] { display: none !important }
-.skip { position: fixed; top: 7px; left: 12px; transform: translateY(-140%); z-index: 8; padding: 4px 12px; color: #201932; background: #fff0d6 }
-.skip:focus { transform: none }
+.skip { position: absolute; top: 7px; left: 12px }
+.skip:not(:focus-visible) { width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); pointer-events: none }
+.skip:focus-visible { position: fixed; z-index: 8; padding: 4px 12px; border-radius: 5px; color: var(--ink); background: var(--night) }
 .bar,footer,.hero-inner,.catalog { max-width: calc(var(--max) + 2 * var(--gut)); padding-inline: var(--gut); margin: auto }
 .mast { background: #141225ef; border-bottom: 1px solid #b6937245 }
 .bar,.brand,.bar nav,.search-open { display: flex; align-items: center }
