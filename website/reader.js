@@ -2,6 +2,13 @@ const root = document.body.dataset.root;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const tabs = [...document.querySelectorAll('[data-tab]')];
 const books = [...document.querySelectorAll('[data-book]')];
+// A restored chapter can be served as static HTML after its original library document was evicted.
+if (document.querySelector('.chapter-view') && !books.length) {
+  const chapterPath = location.pathname;
+  addEventListener('popstate', () => {
+    if (location.pathname !== chapterPath) location.reload();
+  });
+}
 function updateBook() {
   const target = document.getElementById(location.hash.slice(1));
   const active = target?.closest('[data-book]') || books.find(b=>!b.hidden) || books[0];

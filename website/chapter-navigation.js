@@ -106,6 +106,7 @@ document.head.prepend(base);
 
 async function showChapter(url, selected) {
   const ticket = ++visit;
+  const shelfY = scrollY;
   stopMotion();
   main.setAttribute('aria-busy','true');
   try {
@@ -120,7 +121,7 @@ async function showChapter(url, selected) {
     if (canAnimate) await scatter(selected);
     if (ticket !== visit) return;
     if (selected) {
-      history.replaceState({...history.state, shelfY:scrollY, shelfCard:selected.getAttribute('href'),
+      history.replaceState({...history.state, shelfY, shelfCard:selected.getAttribute('href'),
         shelfCover:selected.classList.contains('book-link')}, '');
       history.pushState({readerChapter:url}, '', url);
     }
@@ -148,7 +149,7 @@ async function showChapter(url, selected) {
 }
 
 function showLibrary(saved) {
-  ++visit;
+  const ticket = ++visit;
   stopMotion();
   main.removeAttribute('aria-busy');
   activeView?.remove();
@@ -159,8 +160,13 @@ function showLibrary(saved) {
   window.dispatchEvent(new Event('libraryshown'));
   if (saved?.shelfCard) {
     const links = saved.shelfCover ? [hero.querySelector('.book-link')] : library.querySelectorAll('.chapter-card');
-    Array.from(links).find(a => a.getAttribute('href') === saved.shelfCard)?.focus({preventScroll:true});
-    window.scrollTo({top:saved.shelfY,behavior:'instant'});
+    const selected = Array.from(links).find(a => a.getAttribute('href') === saved.shelfCard);
+    // History traversal can focus a URL fragment after popstate has finished.
+    requestAnimationFrame(() => {
+      if (ticket !== visit) return;
+      selected?.focus({preventScroll:true});
+      window.scrollTo({top:saved.shelfY,behavior:'instant'});
+    });
   } else {
     const target = document.getElementById(location.hash.slice(1)) || document.querySelector('.brand');
     target.tabIndex = -1;
@@ -170,6 +176,9 @@ function showLibrary(saved) {
     if (target.matches('a')) target.removeAttribute('tabindex');
   }
 }
+
+// Returning from a full-page couplet may rebuild the library from its saved history entry.
+if (history.state?.shelfCard) showLibrary(history.state);
 
 document.addEventListener('click', event => {
   const link = event.target.closest('a[href]');
