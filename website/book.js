@@ -135,7 +135,7 @@ async function setup(){
   renderer.domElement.setAttribute('aria-hidden','true');
   const scene=new T.Scene(), book=new T.Group();
   const camera=new T.PerspectiveCamera(30,1,.1,40);
-  camera.position.set(0,0,7.9);
+  camera.position.set(0,0,7.5);
   // Upload at the artwork's native size, independent of the CSS-scaled fallback.
   const coverCanvas=document.createElement('canvas');
   coverCanvas.width=coverImage.naturalWidth;
@@ -157,18 +157,37 @@ async function setup(){
   block(2.25,3.03,.26,0,[edge,binding,edge,edge,paper,paper]);
   block(2.3,3.1,.07,.15,[binding,binding,binding,binding,front,binding]);
   scene.add(book,new T.AmbientLight(0xfff3de,1.7));
-  const sun=new T.DirectionalLight(0xfff6e3,2.0);sun.position.set(-3,5,7);scene.add(sun);
-  const fill=new T.DirectionalLight(0xffdfab,.6);fill.position.set(4,1,1);scene.add(fill);
+  const sun=new T.DirectionalLight(0xfff1cd,2.0);sun.position.set(3.6,7,-7.5);scene.add(sun);
+  const fill=new T.DirectionalLight(0xffe9d9,1.55);fill.position.set(2,3,7);scene.add(fill);
   link.append(renderer.domElement);
+  const footprint=document.getElementById('book-footprint');
+  const corners=[[-1.15,-1.55],[-1.15,1.55],[1.15,1.55],[1.15,-1.55]].map(([x,y])=>new T.Vector3(x,y,0));
+  const point=new T.Vector3();
+  // Match the book's displayed scale in the 200-unit shadow viewBox.
+  const scale=200*.9/(2*camera.position.z*Math.tan(T.MathUtils.degToRad(camera.fov/2)));
+  const heightOverStone=200*(.96-.5)/scale;
+  // The painted circular stone appears as an ellipse seen from a low angle.
+  const surfaceSlope=(.061*819)/(.221*1920);
+  function projectShadow(){
+    const outline=corners.map(corner=>{
+      point.copy(corner).applyQuaternion(book.quaternion);
+      const distance=(point.y+heightOverStone)/sun.position.y;
+      const x=(point.x-distance*sun.position.x)*scale;
+      const y=(point.z-distance*sun.position.z)*scale*surfaceSlope;
+      return x.toFixed(2)+','+y.toFixed(2);
+    });
+    footprint.setAttribute('points',outline.join(' '));
+  }
+  const restingShadow=footprint.getAttribute('points');
   let tx=.12,ty=-.32,frame=0;
   book.rotation.set(tx,ty,-.095);
   function draw(){
     book.rotation.y+=(ty-book.rotation.y)*.14;book.rotation.x+=(tx-book.rotation.x)*.14;
-    renderer.render(scene,camera);frame=0;
+    projectShadow();renderer.render(scene,camera);frame=0;
     if(Math.abs(ty-book.rotation.y)+Math.abs(tx-book.rotation.x)>.001)frame=requestAnimationFrame(draw);
   }
   function start(){if(!frame)frame=requestAnimationFrame(draw);}
-  function resize(){const {width,height}=link.getBoundingClientRect();if(!width||!height)return;renderer.setSize(width,height,false);camera.aspect=width/height;camera.position.z=height<260?7.5:7.45;camera.updateProjectionMatrix();start();}
+  function resize(){const {width,height}=link.getBoundingClientRect();if(!width||!height)return;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();start();}
   function track(e){if(e.pointerType==='touch')return;const b=link.getBoundingClientRect();ty=-.32+((e.clientX-b.left)/b.width-.5)*.88;tx=.12+((e.clientY-b.top)/b.height-.5)*.38;start();}
   function reset(){tx=.12;ty=-.32;start();}
   let touch=null, dragged=false;
@@ -196,6 +215,7 @@ async function setup(){
   draw();link.classList.add('ready');
   dispose=()=>{
     link.classList.remove('ready');observer.disconnect();
+    footprint.setAttribute('points',restingShadow);
     link.removeEventListener('pointermove',track);link.removeEventListener('pointerleave',reset);
     link.removeEventListener('pointerdown',touchStart);link.removeEventListener('pointermove',touchMove);
     link.removeEventListener('pointerup',touchEnd);link.removeEventListener('pointercancel',touchEnd);

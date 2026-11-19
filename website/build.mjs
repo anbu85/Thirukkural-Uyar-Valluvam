@@ -188,7 +188,21 @@ const teacherIntro = `<div class="teacher-intro">
     </figcaption>
   </figure>
 </div>`;
-render('','திருக்குறள்',()=>`<section class="hero"><div class="hero-inner">${teacherIntro}<div class="stage"><div class="book-aura" aria-hidden="true"><canvas></canvas><canvas></canvas></div><a class="book-link" href="chapter/1/" aria-label="கடவுள் வாழ்த்து அதிகாரத்தைத் திறக்க"><img class="flat-book" src="assets/thiruvalluvar-hero.webp" width="720" height="960" alt="அமர்ந்த திருவள்ளுவரின் பொற்சிலையுடன் திருக்குறள் நூல் அட்டை"></a></div></div></section><section id="library" class="catalog"><h1 class="catalog-title">திருக்குறள்</h1><nav class="book-tabs" aria-label="பால் தேர்வு">${tabs}</nav>${books.map(b=>`<section id="book-${b.id}" data-book="${b.id}" class="book-section"><div class="book-meta"><h2>${b.name}</h2>${introLink('intro/book-'+b.id+'/','பால் முன்னுரை')}</div>${b.groups.map(shelf).join('')}</section>`).join('')}<section id="grammar" class="grammar"><h2>குறளில் இலக்கணம்</h2>${grammar.map((label,i)=>`<a href="grammar/${i+1}/">${esc(label)} ${icon('chev',13)}</a>`).join('')}</section></section><script type="module" src="${assetURLs['book.js']}"></script><script type="module" src="${assetURLs['chapter-navigation.js']}"></script>`);
+const heroScene = `<div class="hero-scene"><div class="hero-painting">
+  <div class="pedestal-surface" aria-hidden="true">
+    <svg class="book-shadow" viewBox="-100 -100 200 200" focusable="false">
+      <defs>
+        <polygon id="book-footprint" points="-70.56,0.81 -128.37,20.48 -24.06,22.41 33.75,2.73"/>
+        <filter id="shadow-soft" x="-40%" y="-170%" width="180%" height="440%"><feGaussianBlur stdDeviation="6 3"/></filter>
+        <filter id="shadow-core" x="-40%" y="-140%" width="180%" height="380%"><feGaussianBlur stdDeviation="3 1.6"/></filter>
+      </defs>
+      <use href="#book-footprint" opacity=".32" filter="url(#shadow-soft)"/>
+      <use href="#book-footprint" opacity=".43" filter="url(#shadow-core)"/>
+    </svg>
+  </div>
+  <div class="stage"><div class="book-aura" aria-hidden="true"><canvas></canvas><canvas></canvas></div><a class="book-link" href="chapter/1/" aria-label="கடவுள் வாழ்த்து அதிகாரத்தைத் திறக்க"><img class="flat-book" src="assets/thiruvalluvar-hero.webp" width="720" height="960" alt="அமர்ந்த திருவள்ளுவரின் பொற்சிலையுடன் திருக்குறள் நூல் அட்டை"></a></div>
+</div></div>`;
+render('','திருக்குறள்',()=>`<section class="hero">${heroScene}<div class="hero-inner">${teacherIntro}</div></section><section id="library" class="catalog"><h1 class="catalog-title">திருக்குறள்</h1><nav class="book-tabs" aria-label="பால் தேர்வு">${tabs}</nav>${books.map(b=>`<section id="book-${b.id}" data-book="${b.id}" class="book-section"><div class="book-meta"><h2>${b.name}</h2>${introLink('intro/book-'+b.id+'/','பால் முன்னுரை')}</div>${b.groups.map(shelf).join('')}</section>`).join('')}<section id="grammar" class="grammar"><h2>குறளில் இலக்கணம்</h2>${grammar.map((label,i)=>`<a href="grammar/${i+1}/">${esc(label)} ${icon('chev',13)}</a>`).join('')}</section></section><script type="module" src="${assetURLs['book.js']}"></script><script type="module" src="${assetURLs['chapter-navigation.js']}"></script>`);
 write(join(out,'.nojekyll'),'');
 console.log(`Built ${routes.size} HTML pages, ${books.length} books, ${search.length} couplets.`);
 

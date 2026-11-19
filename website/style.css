@@ -45,17 +45,32 @@ svg { flex: none }
 .search-open { gap: 9px; padding: 4px 17px }
 .search-open:hover,.round:hover:enabled,.icon-button:hover { background: #43364d }
 .hero {
-  position: relative; isolation: isolate; overflow: hidden;
-  background: linear-gradient(90deg,#151329dd 3%,#181329c2 35%,transparent 66%), var(--sky) center 58% / cover no-repeat, #292039;
+  position: relative; isolation: isolate; overflow: hidden; background: #201a30;
 }
-.hero::after { content: ""; pointer-events: none; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg,#1f192fd1,transparent 19%) }
-.hero-inner { min-height: clamp(390px,37vw,545px); display: grid; grid-template-columns: 1.05fr 1fr; align-items: center }
+.hero-scene { position: absolute; inset: 0; overflow: hidden; container-type: size; pointer-events: none }
+.hero-scene::after { content: ""; pointer-events: none; position: absolute; inset: 0; background: linear-gradient(0deg,#201a30db,transparent 19%) }
+.hero-painting {
+  /* Lay out the book and the receiving stone in the artwork's own coordinates. */
+  --pedestal-x: 72.5%; --pedestal-y: 57.4%; --stage-size: clamp(156px,17.6vw,252px);
+  position: absolute; width: max(100cqw,234.44cqh); aspect-ratio: 1920 / 819;
+  left: 50%; top: 58%; translate: -50% -58%;
+  background: linear-gradient(90deg,#151329dd 3%,#181329c2 35%,transparent 66%), var(--sky) center / 100% 100% no-repeat;
+}
+.pedestal-surface {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply;
+  clip-path: ellipse(22.1% 6.1% at 72.5% 58.6%);
+}
+.book-shadow {
+  position: absolute; left: var(--pedestal-x); top: var(--pedestal-y); translate: -50% -50%;
+  width: var(--stage-size); height: var(--stage-size); overflow: visible; fill: #35273a;
+}
+.hero-inner { position: relative; pointer-events: none; min-height: clamp(390px,37vw,545px); display: grid; grid-template-columns: 1.05fr 1fr; align-items: center }
 .teacher-intro {
   display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: start;
   gap: clamp(12px,1.75vw,28px); margin-inline: calc(var(--gut) * -.8) -3vw;
   padding-block: 20px; text-shadow: 0 2px 12px #151024;
 }
-.teacher-profile { margin: 0; display: grid; justify-items: center; text-align: center }
+.teacher-profile { pointer-events: auto; margin: 0; display: grid; justify-items: center; text-align: center }
 .teacher-portrait {
   display: block; width: min(100%,clamp(164px,21.75vw,310px)); height: auto;
   mask-image: linear-gradient(to bottom,black 85%,transparent 100%);
@@ -64,7 +79,10 @@ svg { flex: none }
 .teacher-credit span,.teacher-credit strong,.verse span { display: block }
 .teacher-credit span { font-size: clamp(14px,1.15vw,18px); line-height: 1.6 }
 .teacher-credit strong { font: 700 clamp(21px,1.85vw,30px)/1.45 var(--display); color: #fff3e4; margin-block: 3px }
-.stage { min-width: 0; width: 100%; height: clamp(175px,19vw,275px); align-self: start; margin-top: clamp(6px,1vw,20px); position: relative; isolation: isolate }
+.stage {
+  position: absolute; left: var(--pedestal-x); top: var(--pedestal-y); translate: -50% -96%;
+  width: calc(var(--stage-size) * 1.45); height: var(--stage-size); isolation: isolate;
+}
 .book-aura {
   position: absolute; left: 50%; top: 50%; height: 166%; aspect-ratio: 640 / 560;
   translate: -50% -50%; z-index: -1; pointer-events: none;
@@ -87,13 +105,13 @@ svg { flex: none }
   .book-aura::before { animation: aura-shimmer 6.8s ease-in-out -2.6s infinite }
   .book-aura.out-of-view::before { animation-play-state: paused }
 }
-.book-link { display: block; position: relative; width: 100%; height: 100%; touch-action: pan-y }
+.book-link { display: block; position: relative; width: 100%; height: 100%; touch-action: pan-y; pointer-events: auto }
 .book-link canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transform: scale(.9) }
 .book-link canvas,.flat-book { filter: drop-shadow(0 0 1px #fffbff) drop-shadow(0 0 4px #ffdcfaed) drop-shadow(0 0 9px #c6b2ffb3) }
 .book-link.ready canvas { opacity: 1 }
 .book-link.ready .flat-book { visibility: hidden }
 .flat-book {
-  width: clamp(91px,9.5vw,150px); height: auto; position: absolute; top: 50%; left: 50%;
+  width: 34%; height: auto; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%) perspective(800px) rotateY(-15deg) rotateZ(6deg); border-radius: 3px 5px 7px 2px;
   background: #c28d48; box-shadow: 2px 1px #815025,4px 2px #f6da96,6px 3px #a67436,8px 5px #6b4325,13px 13px 26px #1c0c2a66;
 }
@@ -365,13 +383,30 @@ dialog::backdrop { background: #100b237f; backdrop-filter: blur(4px) }
   .brand { gap: 7px; font-size: 19px }
   .brand svg { width: 23px }
   .search-open { padding: 4px 10px; gap: 6px }
-  .hero { background-position: center,66% center; background-image: linear-gradient(0deg,#1c182fe8,transparent 85%),var(--sky) }
+  .hero { --scene-height: clamp(210px,60vw,300px); background: transparent }
+  .hero::before {
+    content: ""; position: absolute; inset: calc(var(--scene-height) * .65) 0 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 70%,#20142bd9 0%,#27173699 42%,transparent 78%),
+      linear-gradient(to bottom,transparent 28%,#25183173 87%),
+      var(--causeway) 78% bottom / cover no-repeat;
+    mask-image: linear-gradient(to bottom,black 0 78%,transparent 100%);
+  }
+  .hero-scene { position: relative; height: var(--scene-height); overflow: visible }
+  .hero-scene::after { content: none }
+  .hero-painting {
+    --stage-size: clamp(136px,36vw,165px);
+    width: max(186cqw,234.44cqh); top: 65%; translate: -72.5% -58%;
+    background: var(--sky) center / 100% 100% no-repeat;
+    mask-image: linear-gradient(to bottom,black 0 70%,transparent 100%);
+  }
   .hero-inner { display: flex; flex-direction: column-reverse; min-height: auto }
-  .teacher-intro { width: 100%; padding: 10px 0 26px }
+  .teacher-intro {
+    /* Leave space for the painted pedestal tip as the landscape crop widens. */
+    width: 100%; padding: max(24px,calc(28vw - var(--scene-height) * .35 + 12px)) 0 26px;
+  }
   .teacher-credit strong { font-size: clamp(18px,4.4vw,23px) }
   .teacher-credit span { font-size: 14px }
-  .stage { height: 152px; width: 60%; margin: 9px auto 4px }
-  .flat-book { width: 75px }
   .catalog { padding-block: 22px 40px }
   .book-tabs { gap: 7px; margin-block: 15px 18px }
   .book-tabs a { flex: 1; min-width: 0; font-size: clamp(12px,3.5vw,16px) }
