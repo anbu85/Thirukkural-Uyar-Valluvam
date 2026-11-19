@@ -112,10 +112,11 @@ svg { flex: none }
 .book-link.ready canvas { opacity: 1 }
 .book-link.ready .flat-book { visibility: hidden }
 .flat-book {
-  width: 34%; height: auto; position: absolute; top: 50%; left: 50%;
+  width: 34%; aspect-ratio: 3 / 4; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%) perspective(800px) rotateY(-15deg) rotateZ(6deg); border-radius: 3px 5px 7px 2px;
-  background: #c28d48; box-shadow: 2px 1px #815025,4px 2px #f6da96,6px 3px #a67436,8px 5px #6b4325,13px 13px 26px #1c0c2a66;
+  background-size: cover; box-shadow: 2px 1px #815025,4px 2px #f6da96,6px 3px #a67436,8px 5px #6b4325,13px 13px 26px #1c0c2a66;
 }
+.flat-book img { display: block; width: 100%; height: 100%; border-radius: inherit }
 .catalog { padding-block: 28px 56px }
 .catalog-title { display: flex; gap: 18px; align-items: center; justify-content: center; font-size: clamp(28px,3vw,42px) }
 .catalog-title::before,.catalog-title::after { content: ""; width: min(10vw,105px); height: 7px; background: radial-gradient(ellipse at center,#eaca92 35%,transparent 60%) right center / 7px 7px no-repeat, linear-gradient(90deg,transparent,#d1a479aa) left center / calc(100% - 9px) 1px no-repeat }
@@ -258,16 +259,16 @@ svg { flex: none }
 }
 .cover-plate { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none }
 .cover-number {
-  position: absolute; left: 53%; transform: translate(-50%,-50%); white-space: nowrap;
-  text-shadow: 0 1px 0 #ffe3a094;
-  top: 11%; font: 700 14cqw/1 Georgia,serif; letter-spacing: .04em;
+  position: absolute; left: 52.5%; top: 10.6%; transform: translate(-50%,-50%); white-space: nowrap;
+  color: #ffe0a1; text-shadow: 0 1px 1px #2e1606, 1px 1px 2px #361c08;
+  font: 700 13cqw/1 Georgia,serif; letter-spacing: .04em;
 }
-.miniature { position: absolute; left: 16.5%; top: 19%; width: 72%; height: 57.5%; background: #f1dfb6 }
-.miniature img { height: 100%; width: 100%; display: block; object-fit: contain }
+.miniature { position: absolute; inset: 18.4% 13% 23.4% 17.4%; background: #f6eddc }
+.miniature img { height: 100%; width: 100%; display: block; object-fit: cover }
 @media (prefers-reduced-motion: no-preference) {
   .cover-face::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
-    mask: url("antique-gilt.webp") center / 100% 100% no-repeat;
+    mask: url("chapter-kolam.webp") center / 100% 100% no-repeat;
     background: radial-gradient(ellipse at calc(50% + var(--shimmer-x,0) * 44%) calc(50% + var(--shimmer-y,0) * 38%),
         var(--foil-reflection,transparent),transparent 53%) center / 100% 100% no-repeat,
       linear-gradient(115deg,transparent 40%,#ffedc966 49%,transparent 57%) 100% 0 / 280% 100% no-repeat;

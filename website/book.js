@@ -1,6 +1,11 @@
 // The illustrated cover is a regular chapter link even without WebGL or motion.
 const link=document.querySelector('.book-link');
+const coverImage=link.querySelector('.flat-book img');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+
+// Keep the inline artwork visible even if the large image request fails.
+coverImage.addEventListener('error',()=>{coverImage.hidden=true;},{once:true});
+if(coverImage.complete && !coverImage.naturalWidth)coverImage.hidden=true;
 
 // Reuse a tapered brush for each colour while the individual shafts move in waves.
 function rayBrush(colour) {
@@ -125,9 +130,9 @@ setupShimmer();
 let dispose;
 async function setup(){
   if(reduced.matches||dispose)return;
-  const T=await import('./three.module.min.js');
-  const coverImage=link.querySelector('.flat-book');
   await coverImage.decode();
+  if(reduced.matches)return;
+  const T=await import('./three.module.min.js');
   if(reduced.matches||dispose)return;
   const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -142,6 +147,8 @@ async function setup(){
   coverCanvas.height=coverImage.naturalHeight;
   coverCanvas.getContext('2d').drawImage(coverImage,0,0);
   const cover=new T.CanvasTexture(coverCanvas);
+  let coverUploaded=false;
+  cover.onUpdate=()=>{coverUploaded=true;};
   cover.colorSpace=T.SRGBColorSpace;
   cover.anisotropy=renderer.capabilities.getMaxAnisotropy();
   const pages=document.createElement('canvas');pages.width=128;pages.height=4;
@@ -184,6 +191,7 @@ async function setup(){
   function draw(){
     book.rotation.y+=(ty-book.rotation.y)*.14;book.rotation.x+=(tx-book.rotation.x)*.14;
     projectShadow();renderer.render(scene,camera);frame=0;
+    if(coverUploaded && !renderer.getContext().isContextLost())link.classList.add('ready');
     if(Math.abs(ty-book.rotation.y)+Math.abs(tx-book.rotation.x)>.001)frame=requestAnimationFrame(draw);
   }
   function start(){if(!frame)frame=requestAnimationFrame(draw);}
@@ -212,7 +220,6 @@ async function setup(){
   link.addEventListener('click',openCover);
   link.addEventListener('pointermove',track);link.addEventListener('pointerleave',reset);
   const observer=new ResizeObserver(resize);observer.observe(link);resize();
-  draw();link.classList.add('ready');
   dispose=()=>{
     link.classList.remove('ready');observer.disconnect();
     footprint.setAttribute('points',restingShadow);

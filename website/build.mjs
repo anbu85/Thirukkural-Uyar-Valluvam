@@ -7,6 +7,7 @@ import { Marked } from './vendor/marked.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, '..');
 const out = resolve(process.argv[2] || join(repo, '_site'));
+const heroCover = 'assets/thiruvalluvar-hero.webp';
 const books = JSON.parse(read(join(here, 'catalog.json'), 'utf8'));
 const load = path => read(join(repo, path), 'utf8').replace(/\r\n?/g, '\n');
 const esc = str => String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
@@ -112,7 +113,8 @@ function render(path,title,body){
   routes.add(path);
   const root=path?'../'.repeat(path.split('/').length):'./';
   const content=body(root);
-  const html=`<!doctype html><html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#15132b"><title>${esc(title)} · உயர் வள்ளுவம்</title><link rel="stylesheet" href="${root}${assetURLs['style.css']}"><script type="module" src="${root}${assetURLs['reader.js']}"></script></head><body data-root="${root}"><a class="skip" href="#main">உள்ளடக்கத்திற்குச் செல்க</a><header class="mast"><div class="bar"><a class="brand" href="${root}">${icon('book',30)} உயர் வள்ளுவம்</a><nav aria-label="முதன்மை"><a class="library-link" href="${root}#library">திருக்குறள்</a><button class="search-open" aria-label="குறள் தேடல்">${icon('search',17)} தேடல்</button></nav></div></header><main id="main">${content}</main><footer><a href="${root}">உயர் வள்ளுவம்</a><span>கற்க கசடற அறக்கட்டளை</span></footer><dialog id="search-dialog"><div class="search-head"><label for="query">குறள் தேடல்</label><button aria-label="மூடு" class="icon-button" data-close>${icon('close')}</button></div><div class="input-wrap">${icon('search')}<input type="search" id="query" placeholder="குறள் எண், சொல் அல்லது அதிகாரம்" autocomplete="off"></div><p role="status" id="status"></p><div id="results"></div></dialog></body></html>`;
+  const coverPreload = path === '' ? `<link rel="preload" as="image" type="image/webp" href="${heroCover}" fetchpriority="high">` : '';
+  const html=`<!doctype html><html lang="ta"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#15132b"><title>${esc(title)} · உயர் வள்ளுவம்</title>${coverPreload}<link rel="stylesheet" href="${root}${assetURLs['style.css']}"><script type="module" src="${root}${assetURLs['reader.js']}"></script></head><body data-root="${root}"><a class="skip" href="#main">உள்ளடக்கத்திற்குச் செல்க</a><header class="mast"><div class="bar"><a class="brand" href="${root}">${icon('book',30)} உயர் வள்ளுவம்</a><nav aria-label="முதன்மை"><a class="library-link" href="${root}#library">திருக்குறள்</a><button class="search-open" aria-label="குறள் தேடல்">${icon('search',17)} தேடல்</button></nav></div></header><main id="main">${content}</main><footer><a href="${root}">உயர் வள்ளுவம்</a><span>கற்க கசடற அறக்கட்டளை</span></footer><dialog id="search-dialog"><div class="search-head"><label for="query">குறள் தேடல்</label><button aria-label="மூடு" class="icon-button" data-close>${icon('close')}</button></div><div class="input-wrap">${icon('search')}<input type="search" id="query" placeholder="குறள் எண், சொல் அல்லது அதிகாரம்" autocomplete="off"></div><p role="status" id="status"></p><div id="results"></div></dialog></body></html>`;
   const folder=join(out,path);mkdirSync(folder,{recursive:true});write(join(folder,'index.html'),html);
 }
 function crumbs(root,book,group,chapter){
@@ -126,7 +128,7 @@ const introLink=(href,title='முன்னுரை')=>`<a class="intro-link" 
 function giltCover(root, image, label, lazy) {
   return `<span class="cover-face">
     <span class="miniature"><img ${lazy ? 'loading="lazy"' : ''} src="${image}" alt=""></span>
-    <img class="cover-plate" src="${root}assets/antique-gilt.webp" width="600" height="800" alt="">
+    <img class="cover-plate" src="${root}assets/chapter-kolam.webp" width="600" height="800" alt="">
     <b class="cover-number">${label}</b>
   </span>`;
 }
@@ -188,6 +190,7 @@ const teacherIntro = `<div class="teacher-intro">
     </figcaption>
   </figure>
 </div>`;
+const coverPreview = read(join(here,'assets/thiruvalluvar-hero-preview.webp')).toString('base64');
 const heroScene = `<div class="hero-scene"><div class="hero-painting">
   <div class="pedestal-surface" aria-hidden="true">
     <svg class="book-shadow" viewBox="-100 -100 200 200" focusable="false">
@@ -200,7 +203,7 @@ const heroScene = `<div class="hero-scene"><div class="hero-painting">
       <use href="#book-footprint" opacity=".43" filter="url(#shadow-core)"/>
     </svg>
   </div>
-  <div class="stage"><div class="book-aura" aria-hidden="true"><canvas></canvas><canvas></canvas></div><a class="book-link" href="chapter/1/" aria-label="கடவுள் வாழ்த்து அதிகாரத்தைத் திறக்க"><img class="flat-book" src="assets/thiruvalluvar-hero.webp" width="720" height="960" alt="அமர்ந்த திருவள்ளுவரின் பொற்சிலையுடன் திருக்குறள் நூல் அட்டை"></a></div>
+  <div class="stage"><div class="book-aura" aria-hidden="true"><canvas></canvas><canvas></canvas></div><a class="book-link" href="chapter/1/" aria-label="கடவுள் வாழ்த்து அதிகாரத்தைத் திறக்க"><span class="flat-book" role="img" aria-label="அமர்ந்த திருவள்ளுவரின் பொற்சிலையுடன் திருக்குறள் நூல் அட்டை" style="background-image:url('data:image/webp;base64,${coverPreview}')"><img src="${heroCover}" fetchpriority="high" loading="eager" width="720" height="960" alt=""></span></a></div>
 </div></div>`;
 render('','திருக்குறள்',()=>`<section class="hero">${heroScene}<div class="hero-inner">${teacherIntro}</div></section><section id="library" class="catalog"><h1 class="catalog-title">திருக்குறள்</h1><nav class="book-tabs" aria-label="பால் தேர்வு">${tabs}</nav>${books.map(b=>`<section id="book-${b.id}" data-book="${b.id}" class="book-section"><div class="book-meta"><h2>${b.name}</h2>${introLink('intro/book-'+b.id+'/','பால் முன்னுரை')}</div>${b.groups.map(shelf).join('')}</section>`).join('')}<section id="grammar" class="grammar"><h2>குறளில் இலக்கணம்</h2>${grammar.map((label,i)=>`<a href="grammar/${i+1}/">${esc(label)} ${icon('chev',13)}</a>`).join('')}</section></section><script type="module" src="${assetURLs['book.js']}"></script><script type="module" src="${assetURLs['chapter-navigation.js']}"></script>`);
 write(join(out,'.nojekyll'),'');
